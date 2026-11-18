@@ -1,0 +1,13 @@
+node_modules/
+.env
+.env.*
+!.env.example
+.venv/
+__pycache__/
+dist/
+build/
+uploads/
+outputs/
+temp/
+*.pdf
+*.log

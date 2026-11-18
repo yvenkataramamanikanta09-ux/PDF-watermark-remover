@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pdf-watermark-engine"
+version = "0.1.0"
+description = "Conservative, local PDF watermark-annotation processing engine"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = ["pypdf==7.1.0", "pypdfium2==5.15.2"]
+
+[project.optional-dependencies]
+verify = ["Pillow==12.3.0"]
+
+[project.scripts]
+pdf-watermark-engine = "pdf_watermark_engine.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["pdf_watermark_engine*"]
