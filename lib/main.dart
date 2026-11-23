@@ -3,66 +3,50 @@ import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 
 import 'screens/home_screen.dart';
+import 'services/app_services.dart';
 import 'services/file_picker_pdf_document_picker.dart';
+import 'services/on_device_pdf_engine.dart';
+import 'services/pdf_saver.dart';
 import 'services/pdf_selection_service.dart';
-import 'services/pdf_preview_service.dart';
-import 'services/local_pdf_preview_service.dart';
-import 'services/pdf_area_selection_controller.dart';
 import 'theme/app_theme.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   LicenseRegistry.addLicense(() async* {
-    final license = await rootBundle.loadString('assets/fonts/OFL.txt');
-    yield LicenseEntryWithLineBreaks(const ['Inter'], license);
-  });
-  runApp(const MyApp());
-}
-
-class MyApp extends StatefulWidget {
-  const MyApp({
-    super.key,
-    this.pdfSelectionService,
-    this.pdfPreviewService,
-    this.areaSelectionController,
-  });
-
-  final PdfSelectionService? pdfSelectionService;
-  final PdfPreviewService? pdfPreviewService;
-  final PdfAreaSelectionController? areaSelectionController;
-
-  @override
-  State<MyApp> createState() => _MyAppState();
-}
-
-class _MyAppState extends State<MyApp> {
-  late final PdfSelectionService _pdfSelectionService =
-      widget.pdfSelectionService ??
-      PdfSelectionService(picker: const FilePickerPdfDocumentPicker());
-  late final PdfPreviewService _pdfPreviewService =
-      widget.pdfPreviewService ?? LocalPdfPreviewService();
-  late final PdfAreaSelectionController _areaSelectionController =
-      widget.areaSelectionController ?? PdfAreaSelectionController();
-
-  @override
-  void dispose() {
-    if (widget.areaSelectionController == null) {
-      _areaSelectionController.dispose();
+    for (final (package, file) in const [
+      ('Figtree', 'assets/fonts/OFL-Figtree.txt'),
+      ('Newsreader', 'assets/fonts/OFL-Newsreader.txt'),
+    ]) {
+      yield LicenseEntryWithLineBreaks([package], await rootBundle.loadString(file));
     }
-    super.dispose();
-  }
+  });
+  runApp(
+    MyApp(
+      services: AppServices(
+        pdfSelection: PdfSelectionService(picker: const FilePickerPdfDocumentPicker()),
+        engine: OnDevicePdfEngine(),
+        saver: const FilePickerPdfSaver(),
+      ),
+    ),
+  );
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key, required this.services});
+
+  /// Tests pass fakes here.
+  final AppServices services;
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'PDF Watermark Remover',
       debugShowCheckedModeBanner: false,
+      // The design is dark only; it is expressed as a Material 3 theme.
       theme: AppTheme.dark,
-      home: HomeScreen(
-        pdfSelectionService: _pdfSelectionService,
-        pdfPreviewService: _pdfPreviewService,
-        areaSelectionController: _areaSelectionController,
-      ),
+      darkTheme: AppTheme.dark,
+      themeMode: ThemeMode.dark,
+      home: HomeScreen(services: services),
     );
   }
 }

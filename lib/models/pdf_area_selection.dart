@@ -1,16 +1,12 @@
 import 'dart:ui';
 
-import 'selected_pdf.dart';
-
-/// Unit coordinates on the whole rendered page, with a top-left origin.
-///
-/// These are deliberately NOT unrotated PDF user-space coordinates. Android's
-/// renderer has already applied the page's native orientation to the image.
-enum PdfSelectionCoordinateSpace { renderedPageTopLeft }
-
+/// A rectangle in unit coordinates of the page-one preview image the engine rendered,
+/// origin at its top-left (`renderedPageTopLeft`). The engine binds it to the
+/// exact preview it rendered, so no screen or PDF units are involved here.
 final class PdfNormalizedRect {
   const PdfNormalizedRect._(this.rect);
 
+  /// The engine requires at least 2% of the page on each axis.
   static const minimumExtent = 0.02;
   final Rect rect;
 
@@ -27,30 +23,17 @@ final class PdfNormalizedRect {
     return PdfNormalizedRect._(rect);
   }
 
+  Map<String, double> toJson() => {
+    'left': rect.left,
+    'top': rect.top,
+    'right': rect.right,
+    'bottom': rect.bottom,
+  };
+
   @override
   bool operator ==(Object other) =>
       other is PdfNormalizedRect && other.rect == rect;
+
   @override
   int get hashCode => rect.hashCode;
-}
-
-/// Session state only; committing this model does not write to a PDF.
-final class PdfAreaSelection {
-  const PdfAreaSelection({
-    required this.documentId,
-    required this.document,
-    required this.bounds,
-    required this.rasterWidth,
-    required this.rasterHeight,
-  });
-
-  /// Opaque session identity; names and provider URIs are not unique identities.
-  final String documentId;
-  final SelectedPdf document;
-  final PdfNormalizedRect bounds;
-  final int rasterWidth;
-  final int rasterHeight;
-  int get pageNumber => 1;
-  PdfSelectionCoordinateSpace get coordinateSpace =>
-      PdfSelectionCoordinateSpace.renderedPageTopLeft;
 }

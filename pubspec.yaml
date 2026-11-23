@@ -1,5 +1,5 @@
 name: pdf_watermark_remover
-description: "A new Flutter project."
+description: "Removes watermarks from PDFs on Android, fully on the phone."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.0+1
+version: 1.1.0+2
 
 environment:
   sdk: ^3.14.0
@@ -34,9 +34,7 @@ dependencies:
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
-  cupertino_icons: ^1.0.8
   file_picker: ^13.3.3
-  http: ^1.2.0
 
 dev_dependencies:
   flutter_test:
@@ -62,14 +60,30 @@ flutter:
 
   assets:
     - assets/images/
-    - assets/fonts/OFL.txt
+    - assets/fonts/OFL-Figtree.txt
+    - assets/fonts/OFL-Newsreader.txt
 
+  # Body and labels: Figtree (sans serif). Headlines: Newsreader (serif).
+  # Both are variable fonts; Flutter picks the weight axis from FontWeight.
   fonts:
-    - family: Inter
+    - family: Figtree
       fonts:
-        - asset: assets/fonts/Inter-Variable.ttf
-        - asset: assets/fonts/Inter-Variable.ttf
+        - asset: assets/fonts/Figtree-Variable.ttf
+          weight: 400
+        - asset: assets/fonts/Figtree-Variable.ttf
+          weight: 500
+        - asset: assets/fonts/Figtree-Variable.ttf
           weight: 600
+        - asset: assets/fonts/Figtree-Variable.ttf
+          weight: 700
+    - family: Newsreader
+      fonts:
+        - asset: assets/fonts/Newsreader-Variable.ttf
+          weight: 500
+        - asset: assets/fonts/Newsreader-Variable.ttf
+          weight: 600
+        - asset: assets/fonts/Newsreader-Variable.ttf
+          weight: 700
 
   # To add assets to your application, add an assets section, like this:
   # assets:

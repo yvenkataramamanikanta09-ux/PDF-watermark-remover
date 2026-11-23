@@ -34,7 +34,8 @@ class Limits:
     max_pages: int = 100
     max_objects: int = 50_000
     max_annotations: int = 2_000
-    max_graph_depth: int = 64
+    # Tagged PDFs (structure trees, outline /Next chains) commonly exceed 64.
+    max_graph_depth: int = 256
     max_decoded_stream_bytes: int = 64 * 1024 * 1024
     max_appearance_bytes: int = 2 * 1024 * 1024
     memory_mb: int = 768
@@ -49,6 +50,16 @@ class Limits:
                 raise ValueError(f"Integer limit required: {name}")
         if not 128 <= self.memory_mb <= 8192 or self.render_long_edge > 4096:
             raise ValueError("Unsafe memory/render limit")
+        if self.timeout_seconds > MAX_TIMEOUT_SECONDS:
+            raise ValueError("Worker timeout exceeds the supported maximum")
+
+
+# Wall-clock worker budget accepted by Limits (a server wrapper would typically use 180 seconds).
+MAX_TIMEOUT_SECONDS = 300.0
+
+REMOVAL_KINDS = ("watermark_annotation", "watermark_artifact", "area_object", "area_annotation")
+REMOVAL_MODES = ("auto", "area")
+APPLY_TO = ("all_pages", "first_page")
 
 
 @dataclass(frozen=True)
@@ -96,6 +107,10 @@ class EngineResult:
     candidates: list[dict[str, Any]] = field(default_factory=list)
     pages: list[dict[str, Any]] = field(default_factory=list)
     checks: dict[str, Any] = field(default_factory=dict)
+    artifact_count: int = 0
+    removed_by_kind: dict[str, int] = field(default_factory=dict)
+    pages_changed: list[int] = field(default_factory=list)
+    preview: dict[str, Any] | None = None
 
     @property
     def message(self) -> str:

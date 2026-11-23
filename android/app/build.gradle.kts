@@ -2,6 +2,8 @@ plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+    // Must come after the Android plugin.
+    id("com.chaquo.python")
 }
 
 android {
@@ -27,6 +29,11 @@ android {
         // flag during build.
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+
+        // The engine's native libraries (PDFium, Pillow) are shipped for 64-bit ARM phones.
+        ndk {
+            abiFilters += listOf("arm64-v8a")
+        }
     }
 
     buildTypes {
@@ -46,4 +53,28 @@ kotlin {
 
 flutter {
     source = "../.."
+}
+
+// Python runs inside the app. The engine package comes straight from ../../processing_engine,
+// and `pdfwm_mobile.py` (src/main/python) is the entry point called from MainActivity.
+chaquopy {
+    defaultConfig {
+        version = "3.13"
+        pip {
+            install("pypdf==7.1.0")
+            install("pypdfium2==5.15.2")
+            // Pillow comes from Chaquopy's own Android builds (no Android wheels on PyPI).
+            install("Pillow==11.0.0")
+        }
+        // pypdfium2 loads libpdfium.so and its version.json by file path, so these two
+        // packages must be unpacked to real files instead of being read from the APK.
+        extractPackages("pypdfium2", "pypdfium2_raw")
+    }
+    sourceSets {
+        getByName("main") {
+            srcDir("src/main/python")
+            srcDir("../../processing_engine")
+            include("pdfwm_mobile.py", "pdf_watermark_engine/**/*.py")
+        }
+    }
 }

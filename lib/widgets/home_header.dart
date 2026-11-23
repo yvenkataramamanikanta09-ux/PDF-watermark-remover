@@ -1,22 +1,35 @@
 import 'package:material_ui/material_ui.dart';
 
+import '../config.dart';
 import '../theme/app_theme.dart';
 
-enum _HomeMenuAction { back, about }
+/// One entry of the header's "More options" menu.
+final class HeaderAction {
+  const HeaderAction(this.label, this.onSelected);
+  final String label;
+  final VoidCallback onSelected;
+}
 
+/// The rounded header bar of the design: app icon, title and the "…" menu.
 class HomeHeader extends StatelessWidget {
-  const HomeHeader({super.key, this.onBack, this.backLabel = 'Back to Home'});
+  const HomeHeader({super.key, this.actions = const []});
 
-  final VoidCallback? onBack;
-  final String backLabel;
+  /// Screen-specific entries shown above "About this app".
+  final List<HeaderAction> actions;
 
   void _showAbout(BuildContext context) {
     showAboutDialog(
       context: context,
       applicationName: 'PDF Watermark Remover',
-      applicationVersion: '1.0.0',
+      applicationVersion: '1.1.0',
       applicationIcon: const _PdfAppIcon(),
-      children: const [Text('PDF upload is coming soon.')],
+      children: const [
+        Text(
+          'Removes watermark annotations, Acrobat-style watermark layers, and '
+          'anything inside the area you select. Your original file is never '
+          'changed. $privacyNote',
+        ),
+      ],
     );
   }
 
@@ -36,21 +49,16 @@ class HomeHeader extends StatelessWidget {
       child: Row(
         children: [
           const _PdfAppIcon(),
-          // Leave enough width for Inter's full title at the reference size.
+          // Leave enough width for the full title at the reference size.
           SizedBox(width: hasRoomForReferenceSpacing ? 31 : 16),
-          const Expanded(
+          Expanded(
             child: Text(
               'PDF Watermark Remover',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                color: AppColors.primaryText,
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                height: 1.5,
-              ),
+              style: Theme.of(context).textTheme.titleMedium,
             ),
           ),
-          PopupMenuButton<_HomeMenuAction>(
+          PopupMenuButton<int>(
             tooltip: 'More options',
             padding: EdgeInsets.zero,
             icon: const Icon(
@@ -58,23 +66,19 @@ class HomeHeader extends StatelessWidget {
               color: AppColors.primaryText,
               size: 18,
             ),
-            onSelected: (action) {
-              switch (action) {
-                case _HomeMenuAction.back:
-                  onBack?.call();
-                case _HomeMenuAction.about:
-                  _showAbout(context);
+            onSelected: (index) {
+              if (index < actions.length) {
+                actions[index].onSelected();
+              } else {
+                _showAbout(context);
               }
             },
             itemBuilder: (context) => [
-              if (onBack != null)
-                PopupMenuItem(
-                  value: _HomeMenuAction.back,
-                  child: Text(backLabel),
-                ),
-              const PopupMenuItem(
-                value: _HomeMenuAction.about,
-                child: Text('About this app'),
+              for (final (index, action) in actions.indexed)
+                PopupMenuItem(value: index, child: Text(action.label)),
+              PopupMenuItem(
+                value: actions.length,
+                child: const Text('About this app'),
               ),
             ],
           ),

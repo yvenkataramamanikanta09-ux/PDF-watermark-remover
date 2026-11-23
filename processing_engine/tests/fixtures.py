@@ -146,12 +146,45 @@ def _add_annotation(
     return reference
 
 
-def _page_content(page_number: int, crop: Box) -> bytes:
+ARTIFACT_KINDS = ("separate", "named", "inline")
+# Canonical (600 x 800) areas, mapped into each page's crop like the watermark.
+OVERLAY_SELECTION: Box = (170.0, 310.0, 440.0, 500.0)
+ARTIFACT_SELECTION: Box = (140.0, 310.0, 460.0, 450.0)
+
+
+def selection_rect(crop: Sequence[float] = MEDIA_BOX, canonical: Box = OVERLAY_SELECTION) -> Box:
+    """Crop-relative PDF rectangle for a canonical selection area."""
+    return _crop_relative_rect(_validated_crop(crop), canonical)
+
+
+def _crop_matrix(crop: Box) -> str:
     left, bottom, right, top = crop
-    # A canonical layout is scaled into the crop without changing /Rotate.
-    matrix = " ".join(_number(value) for value in (
+    return " ".join(_number(value) for value in (
         (right - left) / 600, 0, 0, (top - bottom) / 800, left, bottom,
     ))
+
+
+def _artifact_section(kind: str) -> str:
+    """Acrobat "Add Watermark" style marked content, in canonical coordinates."""
+    properties = "/MC0" if kind == "named" else "<</Subtype /Watermark /Type /Pagination>>"
+    if kind == "inline":
+        # Text objects directly inside the artifact, in the body stream.
+        return (f"/Artifact {properties} BDC\nq /GSwm gs 0.86 0.06 0.08 rg\n"
+                "BT /F1 36 Tf 0.9397 0.342 -0.342 0.9397 175 330 Tm (CONFIDENTIAL) Tj ET\n"
+                "BT /F1 18 Tf 0.9397 0.342 -0.342 0.9397 230 325 Tm (do not copy) Tj ET\nQ\nEMC\n")
+    return (f"/Artifact {properties} BDC\nq /GSwm gs 1 0 0 1 150 320 cm /FmWM Do Q\nEMC\n")
+
+
+def _overlay() -> str:
+    """Ordinary page content (not an artifact) that a user would select."""
+    return ("q /GSov gs 0.85 0.1 0.1 rg\n"
+            "BT /F1 40 Tf 0.866 0.5 -0.5 0.866 200 330 Tm (DRAFT COPY) Tj ET\n"
+            "q 40 0 0 40 300 380 cm /ImOv Do Q\nQ\n")
+
+
+def _page_content(page_number: int, crop: Box, extra: str = "") -> bytes:
+    matrix = _crop_matrix(crop)
+    # A canonical layout is scaled into the crop without changing /Rotate.
     return (
         f"q\n{matrix} cm\n"
         "0.12 0.16 0.22 rg\n"
@@ -172,6 +205,7 @@ def _page_content(page_number: int, crop: Box) -> bytes:
         "140 285 m 210 365 l 280 335 l 350 425 l 455 485 l S\n"
         "0.12 0.16 0.22 rg\n"
         "BT /F1 12 Tf 120 219 Td (Blue chart must survive annotation removal) Tj ET\n"
+        f"{extra}"
         "0.10 0.28 0.68 rg\n"
         "BT /F1 12 Tf 60 105 Td (Keep this ordinary link) Tj ET\n"
         "0.12 0.16 0.22 rg\n"
@@ -267,6 +301,29 @@ def _add_synthetic_signature(writer: PdfWriter) -> None:
     )
 
 
+def create_marker_fixture(path: Path, *, rotation: int, crop: Sequence[float],
+                          marker: Box, media: Box = MEDIA_BOX) -> Path:
+    """One page, white, with a single black square at raw PDF ``marker``.
+
+    ``crop`` is written verbatim, so it may extend beyond the media box.
+    """
+    writer = PdfWriter()
+    page = writer.add_blank_page(width=media[2] - media[0], height=media[3] - media[1])
+    page.mediabox = RectangleObject(media)
+    page[NameObject("/CropBox")] = ArrayObject([FloatObject(value) for value in crop])
+    page[NameObject("/Rotate")] = NumberObject(rotation)
+    left, bottom, right, top = marker
+    content = DecodedStreamObject()
+    content.set_data(f"0 0 0 rg {_number(left)} {_number(bottom)} {_number(right - left)} "
+                     f"{_number(top - bottom)} re f\n".encode("ascii"))
+    page[NameObject("/Contents")] = writer._add_object(content)
+    path = Path(path)
+    with path.open("wb") as output:
+        writer.write(output)
+    writer.close()
+    return path
+
+
 def create_fixture(
     path: Path,
     *,
@@ -279,6 +336,8 @@ def create_fixture(
     encrypted: bool = False,
     signed: bool = False,
     nested_pages: bool = False,
+    artifact: str | None = None,
+    overlay: bool = False,
 ) -> Path:
     """Write one deterministic PDF and return its path.
 
@@ -292,7 +351,16 @@ def create_fixture(
     ``signed`` adds synthetic signature structure only.  ``encrypted`` uses
     RC4-128 with user and owner password ``test-secret``; it requires no AES
     dependency.  Input assets and network services are never accessed.
+
+    ``artifact`` adds an Acrobat-style ``/Artifact <</Subtype /Watermark>>``
+    page-content watermark: ``"separate"`` (a Form XObject in its own appended
+    content stream, inline property dictionary, as Acrobat writes it),
+    ``"named"`` (same, via a ``/Properties`` resource) or ``"inline"`` (text
+    objects inside the body stream).  ``overlay`` adds ordinary (unmarked)
+    semi-transparent rotated text plus an image inside ``OVERLAY_SELECTION``.
     """
+    if artifact is not None and artifact not in ARTIFACT_KINDS:
+        raise ValueError("Unknown artifact kind.")
     if isinstance(page_count, bool) or not isinstance(page_count, int) or page_count < 1:
         raise ValueError("page_count must be a positive integer.")
     page_rotations = list(rotations) if rotations is not None else [0] * page_count
@@ -348,19 +416,67 @@ def create_fixture(
         "BT /F1 39 Tf 23 46 Td (WATERMARK) Tj ET\nQ\n",
         300, 120,
     ) if watermarks else None
+    artifact_form = _form(
+        writer, font,
+        "q 0.86 0.06 0.08 rg 0.86 0.06 0.08 RG 2 w\n"
+        "BT /F1 34 Tf 0.9397 0.342 -0.342 0.9397 20 12 Tm (CONFIDENTIAL) Tj ET\n"
+        "10 6 m 290 108 l S\nQ\n",
+        300, 120,
+    ) if artifact in ("separate", "named") else None
+    translucent = writer._add_object(DictionaryObject({
+        NameObject("/Type"): NameObject("/ExtGState"),
+        NameObject("/ca"): FloatObject(0.35), NameObject("/CA"): FloatObject(0.35),
+    })) if artifact or overlay else None
+    overlay_image = None
+    if overlay:
+        overlay_image = DecodedStreamObject()
+        overlay_image.set_data(bytes(
+            component for y in range(4) for x in range(4)
+            for component in ((200, 30, 30) if (x + y) % 2 else (250, 210, 40))))
+        overlay_image.update({
+            NameObject("/Type"): NameObject("/XObject"),
+            NameObject("/Subtype"): NameObject("/Image"),
+            NameObject("/Width"): NumberObject(4),
+            NameObject("/Height"): NumberObject(4),
+            NameObject("/ColorSpace"): NameObject("/DeviceRGB"),
+            NameObject("/BitsPerComponent"): NumberObject(8),
+        })
+        overlay_image = writer._add_object(overlay_image)
 
     for index, crop in enumerate(normalized_crops):
         page_number = index + 1
         page = writer.add_blank_page(width=600, height=800)
         page.cropbox = RectangleObject(crop)
         page[NameObject("/Rotate")] = NumberObject(page_rotations[index] % 360)
-        page[NameObject("/Resources")] = DictionaryObject({
+        xobjects = DictionaryObject({NameObject("/Im1"): image_reference})
+        resources = DictionaryObject({
             NameObject("/Font"): DictionaryObject({NameObject("/F1"): font}),
-            NameObject("/XObject"): DictionaryObject({NameObject("/Im1"): image_reference}),
+            NameObject("/XObject"): xobjects,
         })
+        if translucent is not None:
+            resources[NameObject("/ExtGState")] = DictionaryObject({
+                NameObject("/GSwm"): translucent, NameObject("/GSov"): translucent})
+        if artifact_form is not None:
+            xobjects[NameObject("/FmWM")] = artifact_form
+        if overlay_image is not None:
+            xobjects[NameObject("/ImOv")] = overlay_image
+        if artifact == "named":
+            resources[NameObject("/Properties")] = DictionaryObject({
+                NameObject("/MC0"): DictionaryObject({
+                    NameObject("/Subtype"): NameObject("/Watermark"),
+                    NameObject("/Type"): NameObject("/Pagination"),
+                })})
+        page[NameObject("/Resources")] = resources
+        extra = (_artifact_section(artifact) if artifact == "inline" else "") + (_overlay() if overlay else "")
         content = DecodedStreamObject()
-        content.set_data(_page_content(page_number, crop))
-        page[NameObject("/Contents")] = writer._add_object(content)
+        content.set_data(_page_content(page_number, crop, extra))
+        if artifact in ("separate", "named"):
+            appended = DecodedStreamObject()
+            appended.set_data(f"q {_crop_matrix(crop)} cm\n{_artifact_section(artifact)}Q\n".encode("ascii"))
+            page[NameObject("/Contents")] = ArrayObject([
+                writer._add_object(content), writer._add_object(appended)])
+        else:
+            page[NameObject("/Contents")] = writer._add_object(content)
         page[NameObject("/Annots")] = ArrayObject()
         _add_ordinary_annotations(writer, page, page_number, crop, approved_appearance)
 

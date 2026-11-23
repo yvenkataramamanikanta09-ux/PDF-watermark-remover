@@ -1,5 +1,6 @@
-"""Local, annotation-only engine. No Flutter, HTTP, or removal UI integration."""
+"""Local PDF watermark engine: annotations, Acrobat watermark artifacts, selected areas."""
 
-from .models import EngineResult, Limits, ManualSelection, Outcome
+from .api import PdfWatermarkEngine
+from .models import EngineFailure, EngineResult, Limits, ManualSelection, Outcome
 
-__all__ = ["EngineResult", "Limits", "ManualSelection", "Outcome"]
+__all__ = ["EngineFailure", "EngineResult", "Limits", "ManualSelection", "Outcome", "PdfWatermarkEngine"]

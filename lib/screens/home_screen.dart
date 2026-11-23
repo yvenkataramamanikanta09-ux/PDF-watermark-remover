@@ -3,37 +3,26 @@ import 'dart:math' as math;
 import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../services/app_services.dart';
 import '../theme/app_theme.dart';
-import '../services/pdf_selection_service.dart';
-import '../services/pdf_preview_service.dart';
-import '../services/pdf_area_selection_controller.dart';
 import '../widgets/home_background.dart';
 import '../widgets/home_header.dart';
 import '../widgets/pdf_preview.dart';
-import '../widgets/upload_pdf_button.dart';
+import '../widgets/removal_info_sheet.dart';
 import 'pdf_upload_screen.dart';
+import '../widgets/engine_check_dialog.dart';
 
+/// Figma frame "Home": illustration, headline and the Upload PDF action.
 class HomeScreen extends StatelessWidget {
-  const HomeScreen({
-    super.key,
-    required this.pdfSelectionService,
-    this.pdfPreviewService,
-    this.areaSelectionController,
-  });
+  const HomeScreen({super.key, required this.services});
 
-  final PdfSelectionService pdfSelectionService;
-  final PdfPreviewService? pdfPreviewService;
-  final PdfAreaSelectionController? areaSelectionController;
+  final AppServices services;
 
   void _openPdfUpload(BuildContext context) {
     Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
         settings: const RouteSettings(name: PdfUploadScreen.routeName),
-        builder: (context) => PdfUploadScreen(
-          pdfSelectionService: pdfSelectionService,
-          pdfPreviewService: pdfPreviewService,
-          areaSelectionController: areaSelectionController,
-        ),
+        builder: (context) => PdfUploadScreen(services: services),
       ),
     );
   }
@@ -85,17 +74,22 @@ class HomeScreen extends StatelessWidget {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                const Padding(
-                                  padding: EdgeInsets.only(right: 2),
-                                  child: HomeHeader(),
+                                Padding(
+                                  padding: const EdgeInsets.only(right: 2),
+                                  child: HomeHeader(
+                                    actions: [
+                                      HeaderAction(
+                                        'Check PDF engine',
+                                        () => EngineCheckDialog.show(context, services.engine),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                                 const SizedBox(height: 24),
                                 const Spacer(flex: 5),
                                 Center(
                                   child: ConstrainedBox(
-                                    constraints: const BoxConstraints(
-                                      maxWidth: 342,
-                                    ),
+                                    constraints: const BoxConstraints(maxWidth: 342),
                                     child: const PdfPreview(),
                                   ),
                                 ),
@@ -105,18 +99,11 @@ class HomeScreen extends StatelessWidget {
                                   header: true,
                                   child: Center(
                                     child: ConstrainedBox(
-                                      constraints: const BoxConstraints(
-                                        maxWidth: 342,
-                                      ),
-                                      child: const Text(
+                                      constraints: const BoxConstraints(maxWidth: 342),
+                                      child: Text(
                                         'Remove Watermarks from Your PDF',
                                         textAlign: TextAlign.center,
-                                        style: TextStyle(
-                                          color: AppColors.primaryText,
-                                          fontSize: 24,
-                                          fontWeight: FontWeight.w600,
-                                          height: 1.2,
-                                        ),
+                                        style: Theme.of(context).textTheme.headlineSmall,
                                       ),
                                     ),
                                   ),
@@ -124,26 +111,30 @@ class HomeScreen extends StatelessWidget {
                                 const SizedBox(height: 14),
                                 Center(
                                   child: ConstrainedBox(
-                                    constraints: const BoxConstraints(
-                                      maxWidth: 326,
-                                    ),
+                                    constraints: const BoxConstraints(maxWidth: 326),
                                     child: const Text(
                                       'Upload your PDF to remove supported '
                                       'watermarks quickly and securely.',
                                       textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        color: AppColors.secondaryText,
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600,
-                                        height: 1.5,
-                                      ),
+                                      style: AppText.bodyStrong,
                                     ),
                                   ),
                                 ),
-                                const SizedBox(height: 32),
+                                const SizedBox(height: 16),
+                                Center(
+                                  child: ActionChip(
+                                    key: const ValueKey('what-can-be-removed-chip'),
+                                    avatar: const Icon(Icons.info_outline),
+                                    label: const Text('What can be removed?'),
+                                    onPressed: () => RemovalInfoSheet.show(context),
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
                                 const Spacer(flex: 2),
-                                UploadPdfButton(
+                                FilledButton(
+                                  key: const ValueKey('upload-pdf-button'),
                                   onPressed: () => _openPdfUpload(context),
+                                  child: const Text('Upload PDF'),
                                 ),
                               ],
                             ),

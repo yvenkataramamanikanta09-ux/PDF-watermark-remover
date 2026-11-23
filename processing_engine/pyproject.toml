@@ -4,14 +4,16 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pdf-watermark-engine"
-version = "0.1.0"
-description = "Conservative, local PDF watermark-annotation processing engine"
+version = "0.2.0"
+description = "Conservative, local PDF watermark processing engine (annotations, Acrobat artifacts, selected areas)"
 readme = "README.md"
 requires-python = ">=3.11"
-dependencies = ["pypdf==7.1.0", "pypdfium2==5.15.2"]
+dependencies = ["pypdf==7.1.0", "pypdfium2==5.15.2", "Pillow==12.3.0"]
 
 [project.optional-dependencies]
-verify = ["Pillow==12.3.0"]
+# Kept for compatibility with existing install commands; Pillow is now a
+# runtime dependency (preview PNGs and pixel-difference validation).
+verify = []
 
 [project.scripts]
 pdf-watermark-engine = "pdf_watermark_engine.cli:main"

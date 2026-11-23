@@ -209,6 +209,55 @@ def pdf_to_normalized(
     )
 
 
+def effective_crop_box(media_box, crop_box) -> tuple[float, float, float, float]:
+    """PDF semantics: the visible crop box is its intersection with the media box.
+
+    Both inputs are raw ``(x0, y0, x1, y1)`` boxes in any corner order. An empty
+    intersection is an invalid page and raises ``GeometryError``.
+    """
+    media = _normalized_corners(media_box, "media_box")
+    crop = _normalized_corners(crop_box, "crop_box")
+    box = (max(media[0], crop[0]), max(media[1], crop[1]),
+           min(media[2], crop[2]), min(media[3], crop[3]))
+    if box[0] >= box[2] or box[1] >= box[3]:
+        raise GeometryError("crop_box does not intersect media_box")
+    return box
+
+
+def _normalized_corners(value, label) -> tuple[float, float, float, float]:
+    if isinstance(value, (str, bytes)) or not isinstance(value, Sequence) or len(value) != 4:
+        raise GeometryError(f"{label} must contain four coordinates")
+    x0, y0, x1, y1 = (_finite_number(item, f"{label}[{index}]") for index, item in enumerate(value))
+    return min(x0, x1), min(y0, y1), max(x0, x1), max(y0, y1)
+
+
+def pdf_rect_to_unit(
+    geometry: PageGeometry,
+    pdf_rect: tuple[float, float, float, float],
+    *,
+    render_box: str,
+) -> tuple[float, float, float, float] | None:
+    """Map any raw PDF rectangle to rendered top-left unit coordinates.
+
+    Unlike :func:`pdf_to_normalized`, the rectangle is clipped to the render box
+    and no minimum extent applies. Returns ``(left, top, right, bottom)`` in
+    ``[0, 1]`` or ``None`` when nothing of the rectangle is visible.
+    """
+    x0, y0, x1, y1 = _render_box(geometry, render_box)
+    left, bottom, right, top = _normalized_corners(pdf_rect, "pdf_rect")
+    left, bottom = max(left, x0), max(bottom, y0)
+    right, top = min(right, x1), min(top, y1)
+    if left > right or bottom > top:
+        return None
+    width, height = x1 - x0, y1 - y0
+    points = [_unrotated_to_display((x - x0) / width, (y1 - y) / height, geometry.rotation)
+              for x, y in ((left, bottom), (left, top), (right, bottom), (right, top))]
+    return (min(1.0, max(0.0, min(point[0] for point in points))),
+            min(1.0, max(0.0, min(point[1] for point in points))),
+            min(1.0, max(0.0, max(point[0] for point in points))),
+            min(1.0, max(0.0, max(point[1] for point in points))))
+
+
 def geometry_digest(geometry: PageGeometry) -> str:
     """SHA256 of canonical JSON for all validated page geometry metadata."""
     if not isinstance(geometry, PageGeometry):

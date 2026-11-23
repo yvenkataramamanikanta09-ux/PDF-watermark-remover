@@ -1,13 +1,41 @@
-node_modules/
+# Flutter / Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.widget_preview/
+.pub-cache/
+.pub/
+build/
+*.iml
+.idea/
+.metadata.bak
+
+# Android
+android/.gradle/
+android/.kotlin/
+android/local.properties
+android/key.properties
+android/app/.cxx/
+*.jks
+*.keystore
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# Secrets and local settings
 .env
 .env.*
 !.env.example
-.venv/
-__pycache__/
+
+# Built APKs and generated demo output (processing_engine/tools/generate_demo.py)
 dist/
-build/
-uploads/
-outputs/
-temp/
+/output/
+/tmp/
+
+# Misc
 *.pdf
 *.log

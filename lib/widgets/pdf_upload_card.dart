@@ -2,58 +2,53 @@ import 'package:material_ui/material_ui.dart';
 
 import '../theme/app_theme.dart';
 
+/// The upload card of the design. It is a Material card with a ripple, so the
+/// whole card opens the file picker as well as the Choose PDF button.
 class PdfUploadCard extends StatelessWidget {
-  const PdfUploadCard({super.key});
+  const PdfUploadCard({super.key, this.onTap, this.formatText = 'PDF only'});
+
+  final VoidCallback? onTap;
+
+  /// Shown in the chip, e.g. "PDF only • up to 64 MB".
+  final String formatText;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      constraints: const BoxConstraints(minHeight: 315),
-      padding: const EdgeInsets.fromLTRB(19, 34, 19, 33),
-      decoration: BoxDecoration(
-        color: AppColors.preview,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.previewBorder),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const Center(child: _UploadCloudIcon()),
-          const SizedBox(height: 28),
-          const Text(
-            'Select a PDF file to upload',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: AppColors.primaryText,
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              height: 21 / 18,
-            ),
+    final textTheme = Theme.of(context).textTheme;
+    return Card(
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 315),
+          padding: const EdgeInsets.fromLTRB(19, 34, 19, 33),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Center(child: _UploadCloudIcon()),
+              const SizedBox(height: 28),
+              Text(
+                'Select a PDF file to upload',
+                textAlign: TextAlign.center,
+                style: textTheme.titleLarge,
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Choose a PDF from your device.',
+                textAlign: TextAlign.center,
+                style: textTheme.bodyMedium?.copyWith(color: AppColors.secondaryText),
+              ),
+              const SizedBox(height: 40),
+              Center(
+                child: Chip(
+                  key: const ValueKey('format-chip'),
+                  avatar: const Icon(Icons.picture_as_pdf_outlined),
+                  label: Text('Supported format: $formatText'),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 24),
-          const Text(
-            'Choose a PDF from your device.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: AppColors.secondaryText,
-              fontSize: 14,
-              fontWeight: FontWeight.w400,
-              height: 1.5,
-            ),
-          ),
-          const SizedBox(height: 55),
-          const Text(
-            'Supported format: PDF only',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: AppColors.primaryText,
-              fontSize: 14,
-              fontWeight: FontWeight.w400,
-              height: 1.5,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

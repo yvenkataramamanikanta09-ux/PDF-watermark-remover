@@ -65,8 +65,13 @@ class BoundedWriter:
         return getattr(self.stream, name)
 
 
-def publish_exclusive(staged: Path, output: Path, maximum: int) -> None:
-    """Same-directory staging + atomic exclusive hard link; never overwrite."""
+def publish_exclusive(staged: Path, output: Path, maximum: int, *, rename_fallback: bool = False) -> None:
+    """Same-directory staging + atomic exclusive hard link; never overwrite.
+
+    ``rename_fallback`` is for private app storage on phones, where a hard link may be
+    refused: the fully written staging file is then renamed into place instead, after
+    re-checking that nothing exists at the destination.
+    """
     if output.exists() or output.is_symlink() or not output.parent.is_dir():
         raise EngineFailure(Outcome.FAILED, "output_exists_or_directory_unavailable")
     descriptor, temporary = tempfile.mkstemp(prefix=".pdfwm_", suffix=".tmp", dir=output.parent)
@@ -84,7 +89,14 @@ def publish_exclusive(staged: Path, output: Path, maximum: int) -> None:
             os.fsync(target.fileno())
         # Both files are on the destination filesystem. Unsupported hard links
         # fail safely instead of falling back to an incomplete public PDF.
-        os.link(temporary, output)
+        try:
+            os.link(temporary, output)
+        except OSError:
+            if not rename_fallback:
+                raise
+            if output.exists() or output.is_symlink():
+                raise EngineFailure(Outcome.FAILED, "output_exists_or_directory_unavailable") from None
+            os.rename(temporary, output)
         published = True
     finally:
         temporary.unlink(missing_ok=True)

@@ -14,7 +14,7 @@ from pypdf.generic import (ArrayObject, BooleanObject, ByteStringObject, Diction
                            FloatObject, IndirectObject, NameObject, NullObject, NumberObject,
                            StreamObject, TextStringObject)
 
-from .geometry import GeometryError, PageGeometry, geometry_digest
+from .geometry import GeometryError, PageGeometry, effective_crop_box, geometry_digest
 from .models import EngineFailure, Limits, Outcome
 
 
@@ -35,18 +35,24 @@ def resolve(value):
     return value
 
 
+INHERITABLE_PAGE_ATTRIBUTES = ("/Resources", "/MediaBox", "/CropBox", "/Rotate")
+
+
 class Graph:
     """Bounded logical graph digest; independent of rewritten object numbers."""
-    def __init__(self, limits: Limits, removed=frozenset()):
+    def __init__(self, limits: Limits, removed=frozenset(), page_skips=None):
         self.limits = limits
         self.removed = removed
+        # {page object reference: keys deliberately excluded from comparison}
+        # e.g. the rewritten /Contents and /Resources of an edited page.
+        self.page_skips = page_skips or {}
         self.references = {}
         self.incoming = defaultdict(list)
         self.nodes = 0
         self.decoded = 0
         self.signed = False
 
-    def encode(self, value, depth=0, context=""):
+    def encode(self, value, depth=0, context="", skip=()):
         self.nodes += 1
         if depth > self.limits.max_graph_depth or self.nodes > self.limits.max_objects * 32:
             raise EngineFailure(Outcome.FAILED, "object_graph_limit")
@@ -59,16 +65,20 @@ class Graph:
                 raise EngineFailure(Outcome.FAILED, "object_count_limit")
             index = len(self.references)
             self.references[key] = index
-            return ["object", index, self.encode(resolve(value), depth + 1, context)]
+            return ["object", index, self.encode(resolve(value), depth + 1, context,
+                                                 self.page_skips.get(key, ()))]
         if isinstance(value, (DictionaryObject, StreamObject)):
             if (str(resolve(value.get("/FT"))) == "/Sig" or
                     str(resolve(value.get("/Type"))) in ("/Sig", "/DocTimeStamp") or
                     ("/ByteRange" in value and "/Contents" in value)):
                 self.signed = True
             items = []
-            for key, item in sorted(value.items(), key=lambda pair: str(pair[0])):
+            for key, item in sorted(self._effective_items(value), key=lambda pair: str(pair[0])):
                 if str(key) == "/Length" and isinstance(value, StreamObject):
                     continue  # Encoded byte length may be reserialized; data is checked.
+                if str(key) in skip:
+                    items.append([str(key), ["edited"]])
+                    continue
                 items.append([str(key), self.encode(item, depth + 1, str(key))])
             if isinstance(value, StreamObject):
                 data = value.get_data()
@@ -92,10 +102,38 @@ class Graph:
             number = float(value)
             if not math.isfinite(number):
                 raise EngineFailure(Outcome.INVALID_PDF, "non_finite_pdf_number")
+            if isinstance(value, float) and number != 0.0:
+                # pypdf serializes reals with 8 significant digits (FloatObject
+                # .myrepr), so 1008.789063 is written as 1008.78906. Compare at
+                # that precision, which is idempotent for already-written values.
+                number = float(FloatObject(number).myrepr())
             return ["number", number]
         if value is None or isinstance(value, NullObject):
             return ["null"]
         raise EngineFailure(Outcome.INVALID_PDF, "unsupported_pdf_object")
+
+    def _effective_items(self, value):
+        """Items of a dictionary; page leaves also get inherited attributes.
+
+        pypdf's whole-document clone writes inherited /Resources, /MediaBox,
+        /CropBox and /Rotate explicitly on every page. That is semantically
+        identical, so both sides are compared with inheritance resolved.
+        """
+        items = list(value.items())
+        if isinstance(value, StreamObject) or str(resolve(value.get("/Type"))) != "/Page":
+            return items
+        present = {str(key) for key, _ in items}
+        parent, depth = value.get("/Parent"), 0
+        while parent is not None and depth < self.limits.max_graph_depth:
+            node = resolve(parent)
+            if not isinstance(node, DictionaryObject):
+                break
+            for key in INHERITABLE_PAGE_ATTRIBUTES:
+                if key not in present and key in node:
+                    items.append((NameObject(key), node.raw_get(key)))
+                    present.add(key)
+            parent, depth = node.get("/Parent"), depth + 1
+        return items
 
     def digest(self, reader):
         # A graph can be inspected and then hashed again. Traversal indices
@@ -118,9 +156,38 @@ def page_geometry(page, number):
             raise GeometryError("Invalid page box")
         return tuple(float(resolve(value)) for value in values)
     media = box("/MediaBox")
-    return PageGeometry(number, media, box("/CropBox", page.get("/MediaBox")),
+    # A crop box extending beyond the media box is clipped to it (PDF 32000
+    # 14.11.2); PDFium renders the same intersection. Empty -> invalid page.
+    crop = effective_crop_box(media, box("/CropBox", page.get("/MediaBox")))
+    return PageGeometry(number, media, crop,
                         float(resolve(page.get("/Rotate", 0))),
                         float(resolve(page.get("/UserUnit", 1))))
+
+
+EOF_SEARCH_WINDOW = 4096
+
+
+def trim_trailing_bytes(path: Path) -> int:
+    """Drop bytes after the last ``%%EOF`` in the job's own snapshot copy.
+
+    Scanners and printers often append padding or junk after the final
+    ``%%EOF``. Only the private job copy is truncated; byte offsets before the
+    marker are unchanged, and the recorded source hash still describes the
+    original bytes. Returns the number of bytes removed (0 when none).
+    """
+    size = path.stat().st_size
+    with path.open("rb") as stream:
+        stream.seek(max(0, size - EOF_SEARCH_WINDOW))
+        tail = stream.read()
+    if tail.rstrip(b"\x00\t\n\f\r ").endswith(b"%%EOF"):
+        return 0
+    marker = tail.rfind(b"%%EOF")
+    if marker < 0:
+        raise EngineFailure(Outcome.INVALID_PDF, "invalid_pdf_header_or_eof")
+    keep = size - len(tail) + marker + len(b"%%EOF")
+    with path.open("r+b") as stream:
+        stream.truncate(keep)
+    return size - keep
 
 
 def load_document(path: Path, limits: Limits):
@@ -185,6 +252,40 @@ def load_document(path: Path, limits: Limits):
         raise
     except Exception:
         raise EngineFailure(Outcome.INVALID_PDF, "invalid_pdf_structure") from None
+
+
+def write_pdf(writer, path, limits):
+    from .storage import BoundedWriter
+    with path.open("xb") as stream:
+        writer.write(BoundedWriter(stream, limits.max_output_bytes))
+
+
+def clone_document(reader):
+    """Clone reachable objects, retaining the source's nested page tree.
+
+    pypdf's whole-document clone flattens /Pages and rewrites leaf /Parent.
+    Restore those links using its existing object translations before writing.
+    The final graph audit rejects any other unintended transformation.
+    """
+    from pypdf import PdfWriter
+    writer = PdfWriter(clone_from=reader, strict=True, keep_initial_header=True)
+    pending = [reader.root_object.raw_get("/Pages")]
+    visited = set()
+    while pending:
+        reference = pending.pop()
+        key = reference_key(reference)
+        if key in visited:
+            writer.close()
+            raise EngineFailure(Outcome.INVALID_PDF, "cyclic_or_shared_page_tree")
+        visited.add(key)
+        source = resolve(reference)
+        cloned = resolve(reference.clone(writer))
+        for field in ("/Parent", "/Kids"):
+            if field in source:
+                cloned[NameObject(field)] = source.raw_get(field).clone(writer)
+        if "/Kids" in source:
+            pending.extend(resolve(source.raw_get("/Kids")))
+    return writer
 
 
 def page_report(geometry):

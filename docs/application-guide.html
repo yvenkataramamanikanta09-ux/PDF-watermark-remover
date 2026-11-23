@@ -1,0 +1,1127 @@
+<title>PDF Watermark Remover Guide</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,500;6..72,600;6..72,700&display=swap">
+<style>
+:root {
+  --primary: #8C4A55;
+  --on-primary: #FFFFFF;
+  --primary-container: #FFD9DD;
+  --on-primary-container: #3A0A15;
+  --secondary-container: #F6DDE0;
+  --on-secondary-container: #2C1519;
+  --tertiary: #2F6B5A;
+  --tertiary-container: #B4F0DC;
+  --on-tertiary-container: #00201A;
+  --warn: #7A5900;
+  --warn-container: #FFDF9F;
+  --on-warn-container: #261A00;
+  --error: #BA1A1A;
+  --error-container: #FFDAD6;
+  --on-error-container: #410002;
+  --surface: #FFF8F8;
+  --surface-low: #FFF0F1;
+  --surface-container: #FBEAEB;
+  --surface-high: #F5E4E5;
+  --surface-highest: #EFDEDF;
+  --on-surface: #22191A;
+  --on-surface-variant: #524345;
+  --outline: #857375;
+  --outline-variant: #D8C2C4;
+  --code-bg: #F3E2E3;
+  --shadow: 0 1px 3px rgba(34, 25, 26, .18), 0 1px 2px rgba(34, 25, 26, .12);
+  /* The app is dark only; its phone mock-ups keep the app's own colors in both page themes. */
+  --app-bg: #151515;
+  --app-card: #252631;
+  --app-line: #41424D;
+  --app-accent: #F4B9BD;
+  --app-text: #FFFFFF;
+  --app-muted: #B5B5BC;
+  --app-navy: #172838;
+  --app-teal: #1B403B;
+  --app-ok: #4FC08D;
+  --app-err: #3A282B;
+  --r-s: 8px; --r-m: 12px; --r-l: 16px; --r-xl: 28px;
+  --serif: "Newsreader", Georgia, "Times New Roman", serif;
+  --sans: "Figtree", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: ui-monospace, "Cascadia Mono", "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --primary: #F4B9BD;
+    --on-primary: #43202A;
+    --primary-container: #5E2E38;
+    --on-primary-container: #FFD9DD;
+    --secondary-container: #41424D;
+    --on-secondary-container: #FFFFFF;
+    --tertiary: #8FD5BE;
+    --tertiary-container: #1B403B;
+    --on-tertiary-container: #B4F0DC;
+    --warn: #F2C35B;
+    --warn-container: #4A3800;
+    --on-warn-container: #FFE9B8;
+    --error: #FFB4AB;
+    --error-container: #5C1A1A;
+    --on-error-container: #FFDAD6;
+    --surface: #151515;
+    --surface-low: #1B1B1D;
+    --surface-container: #21222A;
+    --surface-high: #252631;
+    --surface-highest: #2E2F3B;
+    --on-surface: #EDE0E1;
+    --on-surface-variant: #B5B5BC;
+    --outline: #8B8B95;
+    --outline-variant: #41424D;
+    --code-bg: #1E1F27;
+    --shadow: 0 1px 3px rgba(0, 0, 0, .6);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --primary: #F4B9BD;
+  --on-primary: #43202A;
+  --primary-container: #5E2E38;
+  --on-primary-container: #FFD9DD;
+  --secondary-container: #41424D;
+  --on-secondary-container: #FFFFFF;
+  --tertiary: #8FD5BE;
+  --tertiary-container: #1B403B;
+  --on-tertiary-container: #B4F0DC;
+  --warn: #F2C35B;
+  --warn-container: #4A3800;
+  --on-warn-container: #FFE9B8;
+  --error: #FFB4AB;
+  --error-container: #5C1A1A;
+  --on-error-container: #FFDAD6;
+  --surface: #151515;
+  --surface-low: #1B1B1D;
+  --surface-container: #21222A;
+  --surface-high: #252631;
+  --surface-highest: #2E2F3B;
+  --on-surface: #EDE0E1;
+  --on-surface-variant: #B5B5BC;
+  --outline: #8B8B95;
+  --outline-variant: #41424D;
+  --code-bg: #1E1F27;
+  --shadow: 0 1px 3px rgba(0, 0, 0, .6);
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--surface);
+  color: var(--on-surface);
+  font: 400 16px/24px var(--sans);
+  -webkit-text-size-adjust: 100%;
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 30; background: var(--surface); }
+a { color: var(--primary); text-underline-offset: 3px; }
+:focus-visible { outline: 3px solid var(--primary); outline-offset: 2px; border-radius: 4px; }
+.ic { width: 24px; height: 24px; flex: none; }
+.ic.sm { width: 18px; height: 18px; }
+
+/* Top app bar */
+.app-bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: var(--surface); border-bottom: 1px solid var(--outline-variant); }
+.app-bar__inner { display: flex; align-items: center; gap: 16px; min-height: 64px; max-width: 1240px; margin: 0 auto; padding-block: 8px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.app-bar__logo { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 10px; background: var(--primary); color: var(--on-primary); }
+.app-bar__title { font: 500 22px/28px var(--sans); }
+.app-bar__sub { font: 500 12px/16px var(--sans); color: var(--on-surface-variant); letter-spacing: .04em; }
+.app-bar__text { flex: 1; min-width: 0; }
+.icon-btn { display: grid; place-items: center; width: 48px; height: 48px; border: 0; border-radius: 50%; background: transparent; color: var(--on-surface-variant); cursor: pointer; }
+.icon-btn:hover { background: var(--surface-container); }
+
+/* Shell */
+.shell { display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; max-width: 1240px; margin: 0 auto; padding-block: 24px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+@media (min-width: 1000px) { .shell { grid-template-columns: 264px minmax(0, 1fr); gap: 48px; } }
+.drawer { display: none; }
+@media (min-width: 1000px) {
+  .drawer { display: block; position: sticky; top: calc(88px + env(safe-area-inset-top, 0px)); align-self: start; max-height: calc(100vh - 112px); overflow-y: auto; }
+  .chip-nav { display: none !important; }
+}
+.drawer h2 { font: 500 14px/20px var(--sans); letter-spacing: .08em; text-transform: uppercase; color: var(--on-surface-variant); margin: 0 0 8px 16px; }
+.drawer a { display: flex; align-items: center; gap: 12px; height: 48px; padding: 0 16px; border-radius: 28px; color: var(--on-surface-variant); text-decoration: none; font: 500 14px/20px var(--sans); }
+.drawer a:hover { background: var(--surface-container); }
+.drawer a[aria-current="true"] { background: var(--secondary-container); color: var(--on-secondary-container); }
+.chip-nav { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px; margin: 0 -4px; padding-inline: 4px; scrollbar-width: thin; }
+.chip-nav a { flex: none; display: inline-flex; align-items: center; height: 36px; padding: 0 14px; border: 1px solid var(--outline); border-radius: 8px; color: var(--on-surface-variant); text-decoration: none; font: 500 14px/20px var(--sans); }
+.chip-nav a[aria-current="true"] { background: var(--secondary-container); color: var(--on-secondary-container); border-color: transparent; }
+
+main { min-width: 0; display: flex; flex-direction: column; gap: 64px; }
+@media (max-width: 999px) { .chip-nav { margin-bottom: -36px; } }
+section { scroll-margin-top: calc(88px + env(safe-area-inset-top, 0px)); min-width: 0; }
+.eyebrow { font: 600 12px/16px var(--sans); letter-spacing: .1em; text-transform: uppercase; color: var(--primary); margin: 0 0 8px; }
+h1, h2, h3, h4 { text-wrap: balance; margin: 0; }
+h1 { font: 600 40px/48px var(--serif); font-variation-settings: "opsz" 48; letter-spacing: -.01em; }
+h2 { font: 600 32px/40px var(--serif); font-variation-settings: "opsz" 36; letter-spacing: -.005em; }
+h3 { font: 600 22px/28px var(--serif); font-variation-settings: "opsz" 24; }
+h4 { font: 600 16px/24px var(--sans); }
+@media (max-width: 600px) { h1 { font-size: 32px; line-height: 40px; } h2 { font-size: 28px; line-height: 36px; } }
+p { margin: 0; }
+.lead { font: 400 18px/28px var(--sans); color: var(--on-surface-variant); max-width: 68ch; margin-top: 12px; }
+.prose { max-width: 68ch; }
+.prose p + p, .stack > * + * { margin-top: 12px; }
+.sub-block { margin-top: 32px; }
+.sub-block > h3 { margin-bottom: 12px; }
+.muted { color: var(--on-surface-variant); }
+code { font: 500 .88em var(--mono); background: var(--code-bg); padding: 1px 6px; border-radius: 6px; overflow-wrap: anywhere; }
+ul.plain { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
+ul.plain.tight { gap: 4px; }
+
+/* Cards, grids */
+.card { background: var(--surface-container); border-radius: var(--r-l); padding: 20px; min-width: 0; }
+.card.outlined { background: transparent; border: 1px solid var(--outline-variant); }
+.card.elevated { background: var(--surface-low); box-shadow: var(--shadow); }
+.card.primary { background: var(--primary-container); color: var(--on-primary-container); }
+.card.tertiary { background: var(--tertiary-container); color: var(--on-tertiary-container); }
+.card.warn { background: var(--warn-container); color: var(--on-warn-container); }
+.card h3, .card h4 { margin-bottom: 8px; }
+.card .row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.card .row h3, .card .row h4 { margin: 0; }
+.grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); }
+.grid.wide { grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); }
+.hero { border-radius: var(--r-xl); padding: 32px; background: var(--primary-container); color: var(--on-primary-container); }
+.hero .lead { color: inherit; opacity: .92; }
+@media (max-width: 600px) { .hero { padding: 24px 20px; } }
+
+/* Chips and pills */
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+.chip { display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--outline); font: 500 14px/20px var(--sans); color: inherit; background: transparent; }
+.hero .chip { border-color: currentColor; }
+.pill { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: 999px; font: 600 12px/20px var(--sans); white-space: nowrap; }
+.pill.ok { background: var(--tertiary-container); color: var(--on-tertiary-container); }
+.pill.warn { background: var(--warn-container); color: var(--on-warn-container); }
+.pill.info { background: var(--secondary-container); color: var(--on-secondary-container); }
+.pill.err { background: var(--error-container); color: var(--on-error-container); }
+
+/* Tables */
+.table-wrap { overflow-x: auto; border: 1px solid var(--outline-variant); border-radius: var(--r-m); background: var(--surface); }
+table { border-collapse: collapse; width: 100%; min-width: 560px; font: 400 14px/20px var(--sans); }
+th, td { text-align: left; vertical-align: top; padding: 12px 16px; border-bottom: 1px solid var(--outline-variant); }
+th { font: 600 12px/16px var(--sans); letter-spacing: .06em; text-transform: uppercase; color: var(--on-surface-variant); background: var(--surface-low); white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+td.k { font-weight: 600; white-space: nowrap; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* Timeline */
+.timeline { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.timeline li { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 16px; padding-bottom: 24px; position: relative; }
+.timeline li:last-child { padding-bottom: 0; }
+.timeline li::before { content: ""; position: absolute; left: 19px; top: 40px; bottom: 0; width: 2px; background: var(--outline-variant); }
+.timeline li:last-child::before { display: none; }
+.timeline .dot { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: var(--secondary-container); color: var(--on-secondary-container); }
+.timeline .dot.now { background: var(--primary); color: var(--on-primary); }
+.timeline .when { font: 600 12px/16px var(--sans); letter-spacing: .06em; text-transform: uppercase; color: var(--on-surface-variant); }
+.timeline h4 { margin: 2px 0 4px; }
+
+/* Figures */
+figure { margin: 0; }
+figure.diagram { background: var(--surface-low); border: 1px solid var(--outline-variant); border-radius: var(--r-l); padding: 16px; }
+.diagram .scroll { overflow-x: auto; }
+.diagram svg { display: block; width: 100%; height: auto; color: var(--on-surface); }
+figcaption { margin-top: 12px; font: 400 14px/20px var(--sans); color: var(--on-surface-variant); max-width: 80ch; }
+svg text { font-family: var(--sans); fill: currentColor; }
+.d-box { fill: var(--surface-container); stroke: var(--outline); stroke-width: 1.2; }
+.d-box.hl { fill: var(--primary-container); stroke: var(--primary); }
+.d-box.tl { fill: var(--tertiary-container); stroke: var(--tertiary); }
+.d-box.er { fill: var(--error-container); stroke: var(--error); }
+.d-box.dash { stroke-dasharray: 5 4; fill: transparent; }
+.d-box.dash.note { fill: var(--surface-low); }
+.d-layer { fill: var(--surface-container); stroke: var(--outline-variant); stroke-width: 1.2; }
+.d-chip { fill: var(--surface-highest); stroke: var(--outline-variant); stroke-width: 1; }
+.d-line { stroke: currentColor; stroke-width: 1.5; fill: none; }
+.d-line.dashed { stroke-dasharray: 5 4; }
+.d-line.life { stroke: var(--outline); stroke-width: 1; stroke-dasharray: 3 5; }
+.d-line.primary { stroke: var(--primary); stroke-width: 2; }
+.d-line.risk { stroke: var(--error); stroke-width: 2; stroke-dasharray: 6 4; }
+.mk { fill: currentColor; }
+.mk.p { fill: var(--primary); }
+.t-title { font-size: 13px; font-weight: 700; }
+.t-lab { font-size: 11.5px; }
+.t-small { font-size: 11px; }
+.t-muted { fill: var(--on-surface-variant); }
+.t-primary { fill: var(--primary); font-weight: 600; }
+.t-err { fill: var(--error); font-weight: 600; }
+.t-bg { fill: var(--surface-low); stroke: none; }
+.num-badge { fill: var(--primary); }
+.num-text { fill: var(--on-primary); font-size: 10.5px; font-weight: 700; }
+
+/* Pipeline steps */
+.steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); counter-reset: step; }
+.steps li { counter-increment: step; background: var(--surface-container); border-radius: var(--r-l); padding: 16px; position: relative; min-width: 0; }
+.steps li::before { content: counter(step); display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--primary); color: var(--on-primary); font: 700 14px/1 var(--sans); margin-bottom: 8px; }
+.steps h4 { margin-bottom: 4px; }
+.steps p { font-size: 14px; line-height: 20px; color: var(--on-surface-variant); }
+
+/* Phone mock-ups */
+.phones { display: grid; gap: 24px 16px; grid-template-columns: repeat(auto-fit, minmax(176px, 1fr)); }
+.phone-fig { display: flex; flex-direction: column; gap: 12px; align-items: center; text-align: left; }
+.phone-fig figcaption { margin: 0; }
+.phone { width: 176px; aspect-ratio: 390 / 844; background: var(--app-bg); color: var(--app-text); border: 2px solid var(--outline); border-radius: 24px; position: relative; overflow: hidden; font: 600 7px/1.25 var(--sans); flex: none; }
+.phone .navy { position: absolute; top: 0; left: 0; width: 100%; height: 23%; background: var(--app-navy); border-radius: 0 0 60% 0 / 0 0 100% 0; }
+.phone .teal { position: absolute; top: 16%; left: 0; width: 32%; height: 30%; background: var(--app-teal); border-radius: 0 100% 100% 0 / 0 50% 50% 0; }
+.phone .hdr { position: absolute; top: 5%; left: 6%; right: 6%; height: 8.5%; background: var(--app-bg); border-radius: 10px; display: flex; align-items: center; gap: 5px; padding: 0 6px; }
+.phone .hdr i { width: 11px; height: 11px; border-radius: 3px; background: var(--app-accent); display: block; }
+.phone .hdr b { flex: 1; text-align: center; font-size: 6.5px; }
+.phone .t { position: absolute; left: 6%; right: 6%; text-align: center; font: 600 11px/1.15 var(--serif); }
+.phone .s { position: absolute; left: 10%; right: 10%; text-align: center; font-weight: 400; color: var(--app-muted); }
+.phone .box { position: absolute; left: 6%; right: 6%; background: var(--app-card); border: 1px solid var(--app-line); border-radius: 10px; }
+.phone .page { position: absolute; background: #fff; border-radius: 3px; }
+.phone .btn { position: absolute; left: 6%; right: 6%; bottom: 4.5%; height: 6.5%; background: var(--app-accent); color: #17171D; border-radius: 7px; display: grid; place-items: center; font-size: 7.5px; }
+.phone .btn.off { background: #323232; color: #7a7a7a; }
+.phone .btn.two { bottom: 12.5%; background: transparent; color: var(--app-accent); border: 1px solid var(--app-line); }
+.phone .bar { position: absolute; left: 14%; right: 14%; height: 3.5px; border-radius: 3px; background: var(--app-line); }
+.phone .bar i { display: block; width: 100%; height: 100%; border-radius: 3px; background: var(--app-accent); }
+.phone .badge { position: absolute; left: 50%; width: 20%; aspect-ratio: 1; transform: translateX(-50%); border-radius: 50%; border: 1.5px solid var(--app-ok); background: var(--app-teal); display: grid; place-items: center; font-size: 11px; }
+.phone .badge.e { border-color: var(--app-accent); background: var(--app-err); }
+.phone .chip { position: absolute; height: 9px; padding: 0 5px; border: 1px solid var(--app-line); background: var(--app-card); border-radius: 3px; font: 500 5.5px/7px var(--sans); white-space: nowrap; display: grid; place-items: center; color: var(--app-text); }
+.phone .sel { position: absolute; border: 1.5px solid var(--app-accent); background: rgba(244, 185, 189, .24); }
+.phone .seg { position: absolute; display: flex; height: 9px; border: 1px solid var(--app-line); border-radius: 5px; overflow: hidden; font-size: 5.5px; left: 22%; right: 22%; }
+.phone .seg span { flex: 1; display: grid; place-items: center; }
+.phone .seg span:first-child { background: var(--app-accent); color: #17171D; }
+
+/* Pre / tree */
+pre { margin: 0; background: var(--code-bg); border-radius: var(--r-m); padding: 16px; overflow-x: auto; font: 500 13px/20px var(--mono); }
+.swatches { display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+.sw { border-radius: var(--r-m); padding: 10px 12px; font: 500 12px/16px var(--sans); border: 1px solid var(--outline-variant); }
+.sw b { display: block; font: 600 13px/18px var(--sans); }
+.sw span { font-family: var(--mono); font-size: 11px; opacity: .85; }
+.cols { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); }
+.kv { display: grid; grid-template-columns: minmax(0, 150px) minmax(0, 1fr); gap: 8px 16px; font-size: 14px; line-height: 20px; }
+.kv dt { font-weight: 600; color: var(--on-surface-variant); }
+.kv dd { margin: 0; }
+.decision { display: grid; gap: 4px 16px; }
+.decision .tag { font: 600 11px/16px var(--sans); letter-spacing: .08em; text-transform: uppercase; color: var(--primary); }
+.decision p { font-size: 14px; line-height: 20px; }
+.decision .why { font-size: 15px; line-height: 22px; }
+footer { border-top: 1px solid var(--outline-variant); padding-top: 24px; font-size: 14px; color: var(--on-surface-variant); }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="i-file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/></symbol>
+    <symbol id="i-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2.5" width="10" height="19" rx="2.2"/><path d="M11 18.5h2"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+    <symbol id="i-offline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+    <symbol id="i-layers" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3L3 8l9 5 9-5-9-5z"/><path d="M3 13l9 5 9-5"/></symbol>
+    <symbol id="i-spark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.7 4.7 1.8-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M18 15l.8 2.2L21 18l-2.2.8L18 21l-.8-2.2L15 18l2.2-.8z"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/><path d="M9 12l2.2 2.2L15 10"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8v.01"/></symbol>
+    <symbol id="i-warn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17v.01"/></symbol>
+    <symbol id="i-box" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4v10l-8 4-8-4V7z"/><path d="M4 7l8 4 8-4M12 11v10"/></symbol>
+    <symbol id="i-code" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 8l-4 4 4 4M15 8l4 4-4 4"/></symbol>
+    <symbol id="i-flask" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3"/></symbol>
+    <symbol id="i-list" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/></symbol>
+    <symbol id="i-brush" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20c3 0 5-1.5 5-4 0-1.5-1-2.5-2.5-2.5S4 14.5 4 16.5V20z"/><path d="M9 14l9-10 2 2-10 9"/></symbol>
+    <symbol id="i-crop" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v14h14M3 7h14v14"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/></symbol>
+    <symbol id="i-flag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 21V4M6 4h11l-2 4 2 4H6"/></symbol>
+  </defs>
+</svg>
+
+<header class="app-bar">
+  <div class="app-bar__inner">
+    <div class="app-bar__logo"><svg class="ic" aria-hidden="true"><use href="#i-file"/></svg></div>
+    <div class="app-bar__text">
+      <div class="app-bar__title">PDF Watermark Remover</div>
+      <div class="app-bar__sub">Application guide · 18 November 2026 · app version 1.1.0</div>
+    </div>
+    <button class="icon-btn" id="theme-toggle" type="button" aria-label="Switch between light and dark theme"><svg class="ic" aria-hidden="true"><use href="#i-moon"/></svg></button>
+  </div>
+</header>
+
+<div class="shell">
+  <nav class="drawer" aria-label="Sections">
+    <h2>On this page</h2>
+    <a href="#overview">Overview</a>
+    <a href="#purpose">Purpose and scope</a>
+    <a href="#plan">How it was planned</a>
+    <a href="#workflow">User workflow</a>
+    <a href="#inside">What happens inside</a>
+    <a href="#architecture">Architecture</a>
+    <a href="#engine">The removal engine</a>
+    <a href="#stack">Technology</a>
+    <a href="#decisions">Why these choices</a>
+    <a href="#local">Why local processing</a>
+    <a href="#material">Material Design 3</a>
+    <a href="#quality">Testing and status</a>
+    <a href="#limits">Limits and next steps</a>
+    <a href="#repo">Repository map</a>
+  </nav>
+
+  <main>
+    <nav class="chip-nav" aria-label="Sections">
+      <a href="#overview">Overview</a><a href="#purpose">Purpose</a><a href="#plan">Plan</a><a href="#workflow">Workflow</a><a href="#inside">Inside</a><a href="#architecture">Architecture</a><a href="#engine">Engine</a><a href="#stack">Technology</a><a href="#decisions">Why</a><a href="#local">Local</a><a href="#material">Material 3</a><a href="#quality">Testing</a><a href="#limits">Limits</a><a href="#repo">Repository</a>
+    </nav>
+
+    <!-- ============================== OVERVIEW ============================== -->
+    <section id="overview">
+      <div class="hero">
+        <p class="eyebrow" style="color:inherit;opacity:.8">Android app · Flutter · Material 3</p>
+        <h1>Remove watermarks from a PDF, on the phone itself.</h1>
+        <p class="lead">You choose a PDF. The app copies it into its own private storage, finds the watermark, lets you mark the area if needed, removes it with a Python engine that is packaged inside the APK, checks every page against the original, and saves a cleaned copy where you choose. The file never leaves the phone and the app has no network permission.</p>
+        <div class="chips">
+          <span class="chip"><svg class="ic sm" aria-hidden="true"><use href="#i-phone"/></svg>Android 7+, 64-bit ARM</span>
+          <span class="chip"><svg class="ic sm" aria-hidden="true"><use href="#i-offline"/></svg>Works offline</span>
+          <span class="chip"><svg class="ic sm" aria-hidden="true"><use href="#i-lock"/></svg>No network permission</span>
+          <span class="chip"><svg class="ic sm" aria-hidden="true"><use href="#i-shield"/></svg>Original never modified</span>
+          <span class="chip"><svg class="ic sm" aria-hidden="true"><use href="#i-box"/></svg>41.6 MB APK</span>
+        </div>
+      </div>
+      <div class="grid sub-block">
+        <div class="card outlined"><h4>User interface</h4><p class="muted">Flutter 3.50 with Material 3 components, following five Figma frames. Newsreader headlines, Figtree text.</p></div>
+        <div class="card outlined"><h4>Processing</h4><p class="muted">A Python 3.13 engine (pypdf, PDFium, Pillow) embedded with Chaquopy and called from Kotlin. Same process as the app.</p></div>
+        <div class="card outlined"><h4>Current status</h4><p class="muted">APK built and inspected, automated tests pass. <strong>Not yet run on a real phone.</strong> The in-app “Check PDF engine” action is the first thing to try.</p></div>
+      </div>
+    </section>
+
+    <!-- ============================== PURPOSE ============================== -->
+    <section id="purpose">
+      <p class="eyebrow">Purpose and scope</p>
+      <h2>One job: a clean copy, or a clear refusal</h2>
+      <p class="lead">The app is for people who hold a PDF with a watermark on it and need a copy without it. It removes what it can identify and prove safe. When it cannot, it says so and produces nothing, instead of guessing.</p>
+      <div class="grid wide sub-block">
+        <div class="card tertiary">
+          <div class="row"><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg><h3>What it removes</h3></div>
+          <ul class="plain">
+            <li><strong>Watermark annotations</strong>: objects whose PDF subtype is <code>/Watermark</code>.</li>
+            <li><strong>Acrobat-style watermark layers</strong>: page content marked <code>/Artifact</code> with subtype <code>/Watermark</code>, on every page.</li>
+            <li><strong>Anything inside an area you mark</strong>: text, images and vector shapes that lie fully inside your rectangle on page 1, applied to every page or only to page 1. <code>/Watermark</code> and <code>/Stamp</code> annotations fully inside are removed too.</li>
+          </ul>
+        </div>
+        <div class="card warn">
+          <div class="row"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg><h3>What it does not remove</h3></div>
+          <ul class="plain">
+            <li>Password-protected PDFs (the engine does not decrypt) and digitally signed or certified PDFs (it refuses to modify them).</li>
+            <li>A watermark that is part of a scanned page image: there is no separate object to remove.</li>
+            <li>Objects only partly inside the area you marked. They are kept on purpose.</li>
+            <li>Watermark layers nested inside form objects, or split across content streams. Those pages are reported and left unchanged.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="card outlined sub-block"><div class="row"><svg class="ic" aria-hidden="true"><use href="#i-shield"/></svg><h4>Principles that shaped every decision</h4></div>
+        <ul class="plain">
+          <li><strong>Never touch the original.</strong> The engine reads a private copy and writes a separate file.</li>
+          <li><strong>Prove it before publishing.</strong> Every page is rendered before and after. A change outside the removed area means no output file.</li>
+          <li><strong>Refuse instead of guess.</strong> Unsupported structures produce an explicit outcome and a code, never a silently altered PDF.</li>
+          <li><strong>Keep the file on the phone.</strong> No upload, no account, no server.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ============================== PLAN ============================== -->
+    <section id="plan">
+      <p class="eyebrow">How it was planned</p>
+      <h2>From a front end and a lab engine to one installable app</h2>
+      <p class="lead">The project began as two separate pieces that were never connected. The plan was to join them, make the engine useful on real documents, match the Figma design, and then move all processing onto the phone when that became the requirement.</p>
+      <div class="sub-block">
+        <ol class="timeline">
+          <li><span class="dot"><svg class="ic sm" aria-hidden="true"><use href="#i-phone"/></svg></span><div><span class="when">Stages 1 to 5 · first repository</span><h4>Front end only</h4><p class="muted">Home, Upload and Processing screens from the Figma design; PDF picking and validation; a first-page preview; manual selection of a watermark area kept in memory. Processing stayed at “Not started”.</p></div></li>
+          <li><span class="dot"><svg class="ic sm" aria-hidden="true"><use href="#i-code"/></svg></span><div><span class="when">Stage 6A · verified 14 November 2026</span><h4>A strict, separate Python engine</h4><p class="muted">Removed only explicit <code>/Watermark</code> annotations, in a resource-limited worker process, with independent PDFium checks. 66 tests. Not connected to the app.</p></div></li>
+          <li><span class="dot"><svg class="ic sm" aria-hidden="true"><use href="#i-search"/></svg></span><div><span class="when">18 November 2026 · review</span><h4>What was missing, found by reading and running the code</h4><p class="muted">The app called nothing; the server could not start (four separate import and configuration faults); a rendering package was used but not declared; and the engine’s scope was too narrow for real files, because most watermarks are page content, not annotations.</p></div></li>
+          <li><span class="dot"><svg class="ic sm" aria-hidden="true"><use href="#i-flag"/></svg></span><div><span class="when">18 November 2026 · scope decision</span><h4>Extend the engine</h4><p class="muted">Add Acrobat-style artifact removal and removal by marked area, both verified by rendering.</p></div></li>
+          <li><span class="dot"><svg class="ic sm" aria-hidden="true"><use href="#i-layers"/></svg></span><div><span class="when">18 November 2026 · design pass</span><h4>Figma frames, Material 3, new fonts</h4><p class="muted">Five frames implemented from the prototype, mapped onto a Material 3 theme; Material components added beside the design; Inter replaced by Newsreader and Figtree.</p></div></li>
+          <li><span class="dot"><svg class="ic sm" aria-hidden="true"><use href="#i-phone"/></svg></span><div><span class="when">18 November 2026 · requirement change</span><h4>Processing moves onto the phone</h4><p class="muted">A first version sent the PDF to a server on a PC and worked in tests, but a phone without that server saw “Server not reachable”. The requirement was local processing, so the engine now runs inside the APK and the server was deleted.</p></div></li>
+          <li><span class="dot now"><svg class="ic sm" aria-hidden="true"><use href="#i-check"/></svg></span><div><span class="when">Now</span><h4>APK 1.1.0 built, device test pending</h4><p class="muted">Flutter and engine tests pass; the packaged Python and PDFium have not yet been seen starting on a phone.</p></div></li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- ============================== WORKFLOW ============================== -->
+    <section id="workflow">
+      <p class="eyebrow">User workflow</p>
+      <h2>Five screens, one path</h2>
+      <p class="lead">The screens are the five frames of the Figma prototype. The path is linear: pick a file, mark or auto-detect the watermark, wait, then download or try again.</p>
+
+      <div class="phones sub-block">
+        <figure class="phone-fig">
+          <div class="phone" role="img" aria-label="Home screen mock-up">
+            <div class="navy"></div><div class="teal"></div>
+            <div class="hdr"><i></i><b>PDF Watermark Remover</b><span>…</span></div>
+            <div class="box" style="top:17%;height:35%"></div>
+            <div class="page" style="left:34%;right:34%;top:21%;height:25%"></div>
+            <div class="t" style="top:57%">Remove Watermarks from Your PDF</div>
+            <div class="s" style="top:70%">Upload your PDF to remove supported watermarks quickly and securely.</div>
+            <div class="chip" style="top:78%;left:30%">What can be removed?</div>
+            <div class="btn">Upload PDF</div>
+          </div>
+          <figcaption><strong>Home.</strong> Illustration, headline, <em>Upload PDF</em>. The “…” menu holds <em>Check PDF engine</em>; the chip opens a sheet on what can and cannot be removed.</figcaption>
+        </figure>
+        <figure class="phone-fig">
+          <div class="phone" role="img" aria-label="Upload screen mock-up">
+            <div class="navy"></div><div class="teal"></div>
+            <div class="hdr"><i></i><b>PDF Watermark Remover</b><span>…</span></div>
+            <div class="t" style="top:20%">Upload Your PDF</div>
+            <div class="box" style="top:31%;height:34%"></div>
+            <div style="position:absolute;left:41%;width:18%;top:36%;aspect-ratio:1;background:var(--app-accent);border-radius:6px"></div>
+            <div class="s" style="top:52%;color:#fff;font-family:var(--serif);font-weight:600;font-size:8.5px">Select a PDF file to upload</div>
+            <div class="chip" style="top:59%;left:18%">PDF only · up to 40 MB</div>
+            <div class="btn">Choose PDF</div>
+          </div>
+          <figcaption><strong>Upload.</strong> The whole card and the button open the system file picker. The chip shows the engine’s limits, read from the engine when the screen opens.</figcaption>
+        </figure>
+        <figure class="phone-fig">
+          <div class="phone" role="img" aria-label="Processing screen mock-up">
+            <div class="navy"></div><div class="teal"></div>
+            <div class="hdr"><i></i><b>PDF Watermark Remover</b><span>…</span></div>
+            <div class="t" style="top:17%">Processing Your PDF</div>
+            <div class="s" style="top:23%">Document: sample_document.pdf</div>
+            <div class="chip" style="top:27%;left:26%">240 KB</div><div class="chip" style="top:27%;left:50%">3 pages</div>
+            <div class="bar" style="top:34%"><i style="width:100%"></i></div>
+            <div class="s" style="top:37%">Ready: select the watermark area</div>
+            <div class="t" style="top:42%;font-size:8px">Manual Watermark Selection</div>
+            <div class="box" style="top:48%;height:36%"></div>
+            <div class="page" style="left:30%;right:30%;top:50%;height:32%"></div>
+            <div class="sel" style="left:38%;right:38%;top:62%;height:7%"></div>
+            <div class="btn">Apply Selection</div>
+          </div>
+          <figcaption><strong>Processing.</strong> Copy and check the PDF, then draw a rectangle on the page-one preview. If watermarks were detected, a <em>Mark area / Automatic</em> switch appears. Removal runs here.</figcaption>
+        </figure>
+        <figure class="phone-fig">
+          <div class="phone" role="img" aria-label="Completed screen mock-up">
+            <div class="navy"></div><div class="teal"></div>
+            <div class="hdr"><i></i><b>PDF Watermark Remover</b><span>…</span></div>
+            <div class="badge" style="top:17%">✓</div>
+            <div class="t" style="top:31%">Processing Completed!</div>
+            <div class="s" style="top:37%">Your PDF is ready to download.</div>
+            <div class="box" style="top:44%;height:38%"></div>
+            <div class="page" style="left:34%;right:34%;top:46%;height:22%"></div>
+            <div class="s" style="top:71%;color:#fff">sample_document_cleaned.pdf</div>
+            <div class="chip" style="top:76%;left:24%">3 objects removed · 3 pages</div>
+            <div class="btn">Download PDF</div>
+          </div>
+          <figcaption><strong>Completed.</strong> Page one of the cleaned file, its name, what was removed. <em>Download PDF</em> opens Android’s Save dialog. The menu offers <em>Select another area</em>.</figcaption>
+        </figure>
+        <figure class="phone-fig">
+          <div class="phone" role="img" aria-label="Error screen mock-up">
+            <div class="navy"></div><div class="teal"></div>
+            <div class="hdr"><i></i><b>PDF Watermark Remover</b><span>…</span></div>
+            <div class="badge e" style="top:17%">!</div>
+            <div class="t" style="top:31%">Unable to Process PDF</div>
+            <div class="s" style="top:37%">We couldn’t process your file. Please review the error below and try again.</div>
+            <div class="box" style="top:47%;height:28%"></div>
+            <div class="s" style="top:51%;color:#fff;font-family:var(--serif);font-size:8.5px">Watermark Removal Failed</div>
+            <div class="s" style="top:60%;text-align:left">The reason, in plain words.</div>
+            <div class="s" style="top:68%;color:var(--app-accent)">Error code: …</div>
+            <div class="btn two">Back to Home</div><div class="btn">Try Again</div>
+          </div>
+          <figcaption><strong>Error.</strong> The same card for every failure: a plain reason and a code such as <code>PASSWORD_REQUIRED</code>. <em>Try Again</em> returns to the step that failed.</figcaption>
+        </figure>
+      </div>
+
+      <figure class="diagram sub-block">
+        <div class="scroll">
+          <svg viewBox="0 0 900 300" style="min-width:720px" role="img" aria-label="Screen flow: Home to Upload to Processing, then Completed on success or Error on failure; Try Again and Select another area return to Processing.">
+            <defs>
+              <marker id="ah1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="mk"/></marker>
+              <marker id="ah1p" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="mk p"/></marker>
+            </defs>
+            <rect class="d-box dash" x="20" y="14" width="150" height="46" rx="10"/><text class="t-small t-muted" x="95" y="35" text-anchor="middle">Check PDF engine</text><text class="t-small t-muted" x="95" y="50" text-anchor="middle">dialog (menu)</text>
+            <line class="d-line dashed" x1="95" y1="60" x2="95" y2="112" marker-end="url(#ah1)"/>
+            <rect class="d-box hl" x="20" y="116" width="150" height="58" rx="12"/><text class="t-title" x="95" y="141" text-anchor="middle">Home</text><text class="t-small t-muted" x="95" y="158" text-anchor="middle">Upload PDF</text>
+            <line class="d-line primary" x1="170" y1="145" x2="230" y2="145" marker-end="url(#ah1p)"/>
+            <rect class="d-box" x="234" y="116" width="150" height="58" rx="12"/><text class="t-title" x="309" y="141" text-anchor="middle">Upload</text><text class="t-small t-muted" x="309" y="158" text-anchor="middle">Choose PDF</text>
+            <line class="d-line primary" x1="384" y1="145" x2="444" y2="145" marker-end="url(#ah1p)"/>
+            <text class="t-lab" x="414" y="136" text-anchor="middle">file</text>
+            <rect class="d-box hl" x="448" y="104" width="180" height="82" rx="12"/><text class="t-title" x="538" y="130" text-anchor="middle">Processing</text><text class="t-small t-muted" x="538" y="148" text-anchor="middle">copy · check · mark</text><text class="t-small t-muted" x="538" y="164" text-anchor="middle">remove</text>
+            <line class="d-line primary" x1="628" y1="124" x2="718" y2="82" marker-end="url(#ah1p)"/>
+            <text class="t-lab" x="650" y="88">removed</text>
+            <rect class="d-box tl" x="722" y="48" width="158" height="64" rx="12"/><text class="t-title" x="801" y="76" text-anchor="middle">Completed</text><text class="t-small t-muted" x="801" y="94" text-anchor="middle">Download PDF</text>
+            <line class="d-line" x1="628" y1="168" x2="718" y2="214" marker-end="url(#ah1)"/>
+            <text class="t-lab" x="700" y="226" text-anchor="end">failed or</text><text class="t-lab" x="700" y="239" text-anchor="end">nothing removed</text>
+            <rect class="d-box er" x="722" y="190" width="158" height="64" rx="12"/><text class="t-title" x="801" y="218" text-anchor="middle">Error</text><text class="t-small t-muted" x="801" y="236" text-anchor="middle">reason + code</text>
+            <path class="d-line dashed" d="M722 238 C 640 280, 560 270, 548 190" marker-end="url(#ah1)"/>
+            <text class="t-lab" x="590" y="282" text-anchor="middle">Try Again</text>
+            <path class="d-line dashed" d="M801 48 C 801 8, 600 6, 560 100" marker-end="url(#ah1)"/>
+            <text class="t-lab" x="700" y="14" text-anchor="middle">Select another area</text>
+          </svg>
+        </div>
+        <figcaption>Screen flow. Solid arrows are the main path. Dashed arrows return to Processing with the same document, which is still held in the app’s cache, so a second area can be tried without picking the file again.</figcaption>
+      </figure>
+
+      <div class="sub-block">
+        <h3>What each screen does, and how it fails</h3>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Screen</th><th>User action</th><th>App behaviour</th><th>When it goes wrong</th></tr></thead>
+          <tbody>
+            <tr><td class="k">Home</td><td>Taps <em>Upload PDF</em>, the “…” menu, or the info chip.</td><td>Opens Upload; runs the engine self-check on request; opens the “What can be removed?” sheet.</td><td>The self-check dialog lists each step and the error code, with <em>Try again</em>.</td></tr>
+            <tr><td class="k">Upload</td><td>Taps the card or <em>Choose PDF</em>.</td><td>Starts the engine, shows its limits, opens Android’s picker. Checks extension, size and the <code>%PDF-</code> header.</td><td>A banner appears if the engine cannot start. Files over the phone’s limit are refused before any copying.</td></tr>
+            <tr><td class="k">Processing</td><td>Waits, draws a rectangle, taps <em>Apply Selection</em> (or <em>Remove Detected Watermarks</em>).</td><td>Copies the file, analyses it, shows page 1, then removes and verifies. Leaving mid-removal asks for confirmation.</td><td>Any refusal or failure opens the Error screen. Choosing <em>Try Again</em> repeats the failed step; refused documents return to Upload.</td></tr>
+            <tr><td class="k">Completed</td><td>Taps <em>Download PDF</em>.</td><td>Reads the result and hands it to Android’s Save dialog. No storage permission is needed.</td><td>A snackbar explains save failures. The result stays until the screen is left.</td></tr>
+            <tr><td class="k">Error</td><td>Taps <em>Try Again</em> or <em>Back to Home</em>.</td><td>Shows the engine’s message and a code in capitals.</td><td>Not applicable; this is the failure state.</td></tr>
+          </tbody></table></div>
+      </div>
+    </section>
+
+    <!-- ============================== INSIDE ============================== -->
+    <section id="inside">
+      <p class="eyebrow">What happens inside</p>
+      <h2>One request, from tap to saved file</h2>
+      <p class="lead">Dart and Python never share memory. They share a folder. The channel between them carries only short JSON strings, and every large file stays on disk.</p>
+
+      <figure class="diagram sub-block">
+        <div class="scroll">
+          <svg viewBox="0 0 910 700" style="min-width:760px" role="img" aria-label="Sequence of one job: Dart creates a job folder, copies the PDF, asks Kotlin to analyze, the Python engine renders page one into the folder, Dart reads the preview, then a remove call verifies and writes the result files, which Dart reads and saves.">
+            <defs>
+              <marker id="ah2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="mk"/></marker>
+              <marker id="ah2p" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="mk p"/></marker>
+            </defs>
+            <!-- lifelines -->
+            <g>
+              <rect class="d-box hl" x="35" y="14" width="130" height="46" rx="10"/><text class="t-title" x="100" y="35" text-anchor="middle">Dart</text><text class="t-small t-muted" x="100" y="51" text-anchor="middle">UI + services</text>
+              <rect class="d-box" x="215" y="14" width="130" height="46" rx="10"/><text class="t-title" x="280" y="35" text-anchor="middle">Kotlin</text><text class="t-small t-muted" x="280" y="51" text-anchor="middle">MainActivity</text>
+              <rect class="d-box" x="395" y="14" width="130" height="46" rx="10"/><text class="t-title" x="460" y="35" text-anchor="middle">Python adapter</text><text class="t-small t-muted" x="460" y="51" text-anchor="middle">pdfwm_mobile.py</text>
+              <rect class="d-box" x="575" y="14" width="130" height="46" rx="10"/><text class="t-title" x="640" y="35" text-anchor="middle">Engine</text><text class="t-small t-muted" x="640" y="51" text-anchor="middle">pypdf · PDFium</text>
+              <rect class="d-box tl" x="745" y="14" width="130" height="46" rx="10"/><text class="t-title" x="810" y="35" text-anchor="middle">Job folder</text><text class="t-small t-muted" x="810" y="51" text-anchor="middle">app cache</text>
+              <line class="d-line life" x1="100" y1="60" x2="100" y2="690"/><line class="d-line life" x1="280" y1="60" x2="280" y2="690"/><line class="d-line life" x1="460" y1="60" x2="460" y2="690"/><line class="d-line life" x1="640" y1="60" x2="640" y2="690"/><line class="d-line life" x1="810" y1="60" x2="810" y2="690"/>
+            </g>
+            <!-- 1 newJob -->
+            <line class="d-line" x1="100" y1="96" x2="276" y2="96" marker-end="url(#ah2)"/><circle class="num-badge" cx="116" cy="96" r="9"/><text class="num-text" x="116" y="100" text-anchor="middle">1</text><text class="t-lab" x="196" y="90" text-anchor="middle">newJob</text>
+            <line class="d-line dashed" x1="276" y1="120" x2="104" y2="120" marker-end="url(#ah2)"/><text class="t-lab t-muted" x="190" y="114" text-anchor="middle">id + folder path</text>
+            <!-- 2 copy -->
+            <rect class="t-bg" x="300" y="141" width="300" height="18"/><line class="d-line" x1="100" y1="156" x2="806" y2="156" marker-end="url(#ah2)"/><circle class="num-badge" cx="116" cy="156" r="9"/><text class="num-text" x="116" y="160" text-anchor="middle">2</text><text class="t-lab" x="450" y="149" text-anchor="middle">stream the picked PDF into original.pdf (size checked)</text>
+            <!-- 3 analyze -->
+            <line class="d-line" x1="100" y1="196" x2="276" y2="196" marker-end="url(#ah2)"/><circle class="num-badge" cx="116" cy="196" r="9"/><text class="num-text" x="116" y="200" text-anchor="middle">3</text><text class="t-lab" x="196" y="190" text-anchor="middle">analyze(jobId)</text>
+            <line class="d-line" x1="280" y1="224" x2="456" y2="224" marker-end="url(#ah2)"/><text class="t-lab" x="368" y="218" text-anchor="middle">Chaquopy call</text>
+            <line class="d-line" x1="460" y1="252" x2="636" y2="252" marker-end="url(#ah2)"/><text class="t-lab" x="548" y="246" text-anchor="middle">engine.analyze()</text>
+            <!-- 4 engine works -->
+            <line class="d-line primary" x1="640" y1="284" x2="806" y2="284" marker-end="url(#ah2p)"/><circle class="num-badge" cx="656" cy="284" r="9"/><text class="num-text" x="656" y="288" text-anchor="middle">4</text><text class="t-lab t-primary" x="738" y="278" text-anchor="middle">hash · parse · scan</text><text class="t-lab t-primary" x="738" y="302" text-anchor="middle">render page 1 → preview.png</text>
+            <line class="d-line" x1="460" y1="326" x2="806" y2="326" marker-end="url(#ah2)"/><text class="t-lab" x="640" y="320" text-anchor="middle">state.json (hash, geometry digest)</text>
+            <!-- 5 JSON back -->
+            <rect class="t-bg" x="150" y="352" width="260" height="18"/><line class="d-line dashed" x1="460" y1="366" x2="104" y2="366" marker-end="url(#ah2)"/><circle class="num-badge" cx="444" cy="366" r="9"/><text class="num-text" x="444" y="370" text-anchor="middle">5</text><text class="t-lab t-muted" x="280" y="359" text-anchor="middle">job JSON (detection, preview size)</text>
+            <!-- 6 read preview -->
+            <rect class="t-bg" x="300" y="388" width="260" height="18"/><line class="d-line dashed" x1="806" y1="402" x2="104" y2="402" marker-end="url(#ah2)"/><circle class="num-badge" cx="790" cy="402" r="9"/><text class="num-text" x="790" y="406" text-anchor="middle">6</text><text class="t-lab t-muted" x="430" y="395" text-anchor="middle">read preview.png</text>
+            <!-- note -->
+            <rect class="d-box dash note" x="35" y="430" width="310" height="44" rx="10"/><text class="t-small" x="190" y="449" text-anchor="middle">User drags a rectangle on the preview.</text><text class="t-small" x="190" y="464" text-anchor="middle">Dart stores it as 0 to 1 fractions, top-left origin.</text>
+            <!-- 7 remove -->
+            <line class="d-line" x1="100" y1="508" x2="276" y2="508" marker-end="url(#ah2)"/><circle class="num-badge" cx="116" cy="508" r="9"/><text class="num-text" x="116" y="512" text-anchor="middle">7</text><text class="t-lab" x="196" y="502" text-anchor="middle">remove(job, mode, area)</text>
+            <line class="d-line" x1="280" y1="534" x2="456" y2="534" marker-end="url(#ah2)"/><text class="t-lab" x="368" y="528" text-anchor="middle">Chaquopy call</text>
+            <line class="d-line" x1="460" y1="560" x2="636" y2="560" marker-end="url(#ah2)"/><text class="t-lab" x="548" y="554" text-anchor="middle">bind area, engine.remove()</text>
+            <!-- 8 verify -->
+            <line class="d-line primary" x1="640" y1="594" x2="806" y2="594" marker-end="url(#ah2p)"/><circle class="num-badge" cx="656" cy="594" r="9"/><text class="num-text" x="656" y="598" text-anchor="middle">8</text><text class="t-lab t-primary" x="738" y="588" text-anchor="middle">edit · render · verify</text><text class="t-lab t-primary" x="738" y="612" text-anchor="middle">→ processed.pdf, result.png</text>
+            <!-- 9 JSON back -->
+            <rect class="t-bg" x="150" y="632" width="260" height="18"/><line class="d-line dashed" x1="460" y1="646" x2="104" y2="646" marker-end="url(#ah2)"/><circle class="num-badge" cx="444" cy="646" r="9"/><text class="num-text" x="444" y="650" text-anchor="middle">9</text><text class="t-lab t-muted" x="280" y="639" text-anchor="middle">job JSON (status, counts)</text>
+            <!-- 10 read -->
+            <rect class="t-bg" x="300" y="668" width="280" height="18"/><line class="d-line dashed" x1="806" y1="682" x2="104" y2="682" marker-end="url(#ah2)"/><circle class="num-badge" cx="790" cy="682" r="9"/><text class="num-text" x="790" y="686" text-anchor="middle">10</text><text class="t-lab t-muted" x="440" y="675" text-anchor="middle">read result.png and processed.pdf, then Save As</text>
+          </svg>
+        </div>
+        <figcaption>Sequence of one job. Solid arrows are calls, dashed arrows are replies or reads. Steps 3 to 6 happen once per document; steps 7 to 10 repeat for every removal attempt on the same document. The rose arrows mark the two steps where the engine does the real work.</figcaption>
+      </figure>
+
+      <div class="cols sub-block">
+        <div class="card outlined">
+          <h3>Where files live</h3>
+          <pre>cache/pdfwm/jobs/&lt;uuid&gt;/
+  original.pdf   private copy of the pick
+  preview.png    page 1, rendered by PDFium
+  state.json     hash + geometry digest + job
+  processed.pdf  the cleaned copy
+  result.png     page 1 of the cleaned copy
+  work/pdfwm_*/  engine scratch, auto-deleted</pre>
+          <p class="muted" style="margin-top:12px">Closing a document deletes its folder. Folders older than one hour are purged the next time the engine starts.</p>
+        </div>
+        <div class="card outlined">
+          <h3>Threads</h3>
+          <dl class="kv">
+            <dt>Dart UI</dt><dd>Draws screens, handles touches, streams the file copy. Never waits on Python.</dd>
+            <dt>Platform thread</dt><dd>Receives channel calls and posts replies.</dd>
+            <dt>Executor thread</dt><dd>One background thread runs every Python call, so documents are processed one at a time.</dd>
+          </dl>
+          <p class="muted" style="margin-top:12px">Python runs in the app’s own process through Chaquopy; there is no separate service.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================== ARCHITECTURE ============================== -->
+    <section id="architecture">
+      <p class="eyebrow">Architecture</p>
+      <h2>Six layers in one Android process</h2>
+      <p class="lead">Each layer talks only to the one below it, through one narrow interface. That keeps the screens testable with a fake engine, and the engine testable on a PC without Android.</p>
+
+      <figure class="diagram sub-block">
+        <div class="scroll">
+          <svg viewBox="0 0 900 690" style="min-width:760px" role="img" aria-label="Layer diagram: Flutter UI, Dart services, Kotlin host, Python adapter, Python engine, and libraries, with the interface between each pair, and a shared job folder on the right.">
+            <defs>
+              <marker id="ah3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="mk"/></marker>
+            </defs>
+            <!-- layer 1 -->
+            <rect class="d-layer" x="20" y="20" width="620" height="76" rx="14"/><text class="t-title" x="36" y="44">UI · Flutter + Material 3 (Dart)</text>
+            <rect class="d-chip" x="36" y="56" width="62" height="26" rx="7"/><text class="t-small" x="67" y="73" text-anchor="middle">Home</text>
+            <rect class="d-chip" x="106" y="56" width="68" height="26" rx="7"/><text class="t-small" x="140" y="73" text-anchor="middle">Upload</text>
+            <rect class="d-chip" x="182" y="56" width="88" height="26" rx="7"/><text class="t-small" x="226" y="73" text-anchor="middle">Processing</text>
+            <rect class="d-chip" x="278" y="56" width="66" height="26" rx="7"/><text class="t-small" x="311" y="73" text-anchor="middle">Result</text>
+            <rect class="d-chip" x="352" y="56" width="58" height="26" rx="7"/><text class="t-small" x="381" y="73" text-anchor="middle">Error</text>
+            <rect class="d-chip" x="418" y="56" width="150" height="26" rx="7"/><text class="t-small" x="493" y="73" text-anchor="middle">theme · shared widgets</text>
+            <line class="d-line" x1="330" y1="96" x2="330" y2="126" marker-end="url(#ah3)"/><text class="t-lab" x="344" y="116">PdfEngine interface</text>
+            <!-- layer 2 -->
+            <rect class="d-layer" x="20" y="130" width="620" height="76" rx="14"/><text class="t-title" x="36" y="154">Services (Dart)</text>
+            <rect class="d-chip" x="36" y="166" width="138" height="26" rx="7"/><text class="t-small" x="105" y="183" text-anchor="middle">OnDevicePdfEngine</text>
+            <rect class="d-chip" x="182" y="166" width="144" height="26" rx="7"/><text class="t-small" x="254" y="183" text-anchor="middle">PdfSelectionService</text>
+            <rect class="d-chip" x="334" y="166" width="170" height="26" rx="7"/><text class="t-small" x="419" y="183" text-anchor="middle">AreaSelectionController</text>
+            <rect class="d-chip" x="512" y="166" width="72" height="26" rx="7"/><text class="t-small" x="548" y="183" text-anchor="middle">PdfSaver</text>
+            <line class="d-line" x1="330" y1="206" x2="330" y2="236" marker-end="url(#ah3)"/><text class="t-lab" x="344" y="226">MethodChannel “pdfwm/engine” · JSON strings</text>
+            <!-- layer 3 -->
+            <rect class="d-layer" x="20" y="240" width="620" height="76" rx="14"/><text class="t-title" x="36" y="264">Android host (Kotlin)</text>
+            <rect class="d-chip" x="36" y="276" width="104" height="26" rx="7"/><text class="t-small" x="88" y="293" text-anchor="middle">MainActivity</text>
+            <rect class="d-chip" x="148" y="276" width="150" height="26" rx="7"/><text class="t-small" x="223" y="293" text-anchor="middle">single-thread executor</text>
+            <rect class="d-chip" x="306" y="276" width="100" height="26" rx="7"/><text class="t-small" x="356" y="293" text-anchor="middle">job folders</text>
+            <rect class="d-chip" x="414" y="276" width="120" height="26" rx="7"/><text class="t-small" x="474" y="293" text-anchor="middle">Chaquopy start</text>
+            <line class="d-line" x1="330" y1="316" x2="330" y2="346" marker-end="url(#ah3)"/><text class="t-lab" x="344" y="336">Chaquopy call, same process</text>
+            <!-- layer 4 -->
+            <rect class="d-layer" x="20" y="350" width="620" height="76" rx="14"/><text class="t-title" x="36" y="374">Adapter (Python): pdfwm_mobile.py</text>
+            <rect class="d-chip" x="36" y="386" width="52" height="26" rx="7"/><text class="t-small" x="62" y="403" text-anchor="middle">info</text>
+            <rect class="d-chip" x="96" y="386" width="68" height="26" rx="7"/><text class="t-small" x="130" y="403" text-anchor="middle">analyze</text>
+            <rect class="d-chip" x="172" y="386" width="66" height="26" rx="7"/><text class="t-small" x="205" y="403" text-anchor="middle">remove</text>
+            <rect class="d-chip" x="246" y="386" width="78" height="26" rx="7"/><text class="t-small" x="285" y="403" text-anchor="middle">self_test</text>
+            <rect class="d-chip" x="332" y="386" width="58" height="26" rx="7"/><text class="t-small" x="361" y="403" text-anchor="middle">purge</text>
+            <line class="d-line" x1="330" y1="426" x2="330" y2="456" marker-end="url(#ah3)"/><text class="t-lab" x="344" y="446">PdfWatermarkEngine(isolation=“inprocess”)</text>
+            <!-- layer 5 -->
+            <rect class="d-layer" x="20" y="460" width="620" height="100" rx="14"/><text class="t-title" x="36" y="484">Engine (Python): pdf_watermark_engine</text>
+            <rect class="d-chip" x="36" y="494" width="44" height="24" rx="7"/><text class="t-small" x="58" y="510" text-anchor="middle">api</text>
+            <rect class="d-chip" x="88" y="494" width="48" height="24" rx="7"/><text class="t-small" x="112" y="510" text-anchor="middle">core</text>
+            <rect class="d-chip" x="144" y="494" width="82" height="24" rx="7"/><text class="t-small" x="185" y="510" text-anchor="middle">document</text>
+            <rect class="d-chip" x="234" y="494" width="92" height="24" rx="7"/><text class="t-small" x="280" y="510" text-anchor="middle">annotations</text>
+            <rect class="d-chip" x="334" y="494" width="64" height="24" rx="7"/><text class="t-small" x="366" y="510" text-anchor="middle">content</text>
+            <rect class="d-chip" x="406" y="494" width="60" height="24" rx="7"/><text class="t-small" x="436" y="510" text-anchor="middle">editing</text>
+            <rect class="d-chip" x="36" y="524" width="72" height="24" rx="7"/><text class="t-small" x="72" y="540" text-anchor="middle">geometry</text>
+            <rect class="d-chip" x="116" y="524" width="80" height="24" rx="7"/><text class="t-small" x="156" y="540" text-anchor="middle">rendering</text>
+            <rect class="d-chip" x="204" y="524" width="64" height="24" rx="7"/><text class="t-small" x="236" y="540" text-anchor="middle">storage</text>
+            <rect class="d-chip" x="276" y="524" width="62" height="24" rx="7"/><text class="t-small" x="307" y="540" text-anchor="middle">models</text>
+            <line class="d-line" x1="330" y1="560" x2="330" y2="590" marker-end="url(#ah3)"/><text class="t-lab" x="344" y="580">Python calls; ctypes into PDFium</text>
+            <!-- layer 6 -->
+            <rect class="d-layer" x="20" y="594" width="620" height="76" rx="14"/><text class="t-title" x="36" y="618">Libraries</text>
+            <rect class="d-chip" x="36" y="630" width="184" height="26" rx="7"/><text class="t-small" x="128" y="647" text-anchor="middle">pypdf 7.1.0 · PDF structure</text>
+            <rect class="d-chip" x="228" y="630" width="226" height="26" rx="7"/><text class="t-small" x="341" y="647" text-anchor="middle">pypdfium2 5.15.2 → PDFium · render, bounds</text>
+            <rect class="d-chip" x="462" y="630" width="166" height="26" rx="7"/><text class="t-small" x="545" y="647" text-anchor="middle">Pillow 11.0.0 · pixel diff</text>
+            <!-- right column -->
+            <rect class="d-box hl" x="680" y="20" width="200" height="76" rx="14"/><text class="t-title" x="780" y="46" text-anchor="middle">One Android process</text><text class="t-small" x="780" y="64" text-anchor="middle">no network permission</text><text class="t-small" x="780" y="80" text-anchor="middle">no second service</text>
+            <rect class="d-box tl" x="680" y="262" width="200" height="146" rx="14"/><text class="t-title" x="780" y="288" text-anchor="middle">Job folder</text><text class="t-small" x="780" y="308" text-anchor="middle">cache/pdfwm/jobs/&lt;uuid&gt;</text><text class="t-small t-muted" x="780" y="332" text-anchor="middle">original.pdf · preview.png</text><text class="t-small t-muted" x="780" y="348" text-anchor="middle">state.json · processed.pdf</text><text class="t-small t-muted" x="780" y="364" text-anchor="middle">result.png</text><text class="t-small" x="780" y="382" text-anchor="middle">Dart, Kotlin and the engine</text><text class="t-small" x="780" y="396" text-anchor="middle">all read and write here</text>
+            <line class="d-line dashed" x1="680" y1="335" x2="660" y2="335"/>
+            <line class="d-line dashed" x1="660" y1="168" x2="660" y2="510"/>
+            <line class="d-line dashed" x1="660" y1="168" x2="640" y2="168" marker-end="url(#ah3)"/>
+            <line class="d-line dashed" x1="660" y1="278" x2="640" y2="278" marker-end="url(#ah3)"/>
+            <line class="d-line dashed" x1="660" y1="510" x2="640" y2="510" marker-end="url(#ah3)"/>
+          </svg>
+        </div>
+        <figcaption>The layers and the interface between each pair. Dart, Kotlin and Python are all in one process. The dashed bus on the right marks the only place data other than JSON crosses a layer: files in the job folder.</figcaption>
+      </figure>
+
+      <div class="sub-block">
+        <h3>Modules</h3>
+        <div class="table-wrap"><table style="min-width:760px">
+          <colgroup><col style="width:128px"><col style="width:300px"><col></colgroup>
+          <thead><tr><th>Layer</th><th>Module</th><th>Responsibility</th></tr></thead>
+          <tbody>
+            <tr><td class="k">Dart UI</td><td><code>screens/</code> ×5, <code>widgets/</code> ×7</td><td>The five Figma frames; shared frame (<code>app_screen</code>), header, upload card, info sheet, engine-check dialog, page view that draws and maps the selection rectangle.</td></tr>
+            <tr><td class="k">Dart services</td><td><code>pdf_engine</code>, <code>on_device_pdf_engine</code></td><td>The engine interface and its Android implementation: copies the picked PDF into a job folder, calls the channel, parses JSON, turns every failure into one <code>EngineException</code> with a plain message and a code.</td></tr>
+            <tr><td class="k"></td><td><code>pdf_selection_service</code>, <code>file_picker_pdf_document_picker</code></td><td>Opens Android’s picker and does the first checks (extension, size, header) without loading the file into memory.</td></tr>
+            <tr><td class="k"></td><td><code>pdf_area_selection_controller</code>, <code>pdf_saver</code></td><td>State of the dragged rectangle; the “Save as” hand-off.</td></tr>
+            <tr><td class="k">Android</td><td><code>MainActivity.kt</code> (122 lines)</td><td>Starts Python once, runs every call on one thread, creates and deletes job folders (UUID names only), purges old ones.</td></tr>
+            <tr><td class="k">Python adapter</td><td><code>pdfwm_mobile.py</code> (269 lines)</td><td>JSON entry points: <code>info</code>, <code>analyze</code>, <code>remove</code>, <code>self_test</code>, <code>purge</code>. Applies phone limits and builds the area selection from the stored preview facts.</td></tr>
+            <tr><td class="k">Engine</td><td><code>api</code>, <code>core</code></td><td>Public API and job lifecycle; the detect, analyze and remove flow with all validation.</td></tr>
+            <tr><td class="k"></td><td><code>document</code>, <code>annotations</code></td><td>Strict parsing, object-graph audit and limits; finding supported <code>/Watermark</code> annotations.</td></tr>
+            <tr><td class="k"></td><td><code>content</code>, <code>editing</code></td><td>Reading content streams, finding watermark artifacts and objects in an area, and removing exactly those painting operators.</td></tr>
+            <tr><td class="k"></td><td><code>geometry</code>, <code>rendering</code></td><td>Page boxes, rotation and normalised-to-PDF mapping; independent PDFium render and comparison.</td></tr>
+            <tr><td class="k"></td><td><code>storage</code>, <code>models</code></td><td>Snapshot copy with hashing, exclusive publishing; limits, outcomes, result types.</td></tr>
+          </tbody></table></div>
+        <p class="muted" style="margin-top:12px">Engine: 2,929 lines in 15 files. App: 3,424 lines of Dart in 30 files. The engine also has a worker-process mode (<code>worker</code>, <code>isolation</code>, <code>cli</code>) that Android does not use.</p>
+      </div>
+    </section>
+
+    <!-- ============================== ENGINE ============================== -->
+    <section id="engine">
+      <p class="eyebrow">The removal engine</p>
+      <h2>Edit narrowly, then prove nothing else changed</h2>
+      <p class="lead">The engine is the part with no room for error, because a wrong edit silently damages someone’s document. Everything is built around making that visible before a file is produced.</p>
+
+      <div class="grid wide sub-block">
+        <div class="card elevated">
+          <div class="row"><svg class="ic" aria-hidden="true"><use href="#i-spark"/></svg><h3>Automatic mode</h3></div>
+          <p class="muted">Removes supported <code>/Watermark</code> annotations (an explicit structural type, never inferred from text or position) and Acrobat-style artifacts, where all objects of a watermark on a page are removed together or the page is left alone.</p>
+        </div>
+        <div class="card elevated">
+          <div class="row"><svg class="ic" aria-hidden="true"><use href="#i-crop"/></svg><h3>Area mode</h3></div>
+          <p class="muted">Your rectangle on page 1 is mapped to each page’s own crop box and rotation. Every object fully inside it is removed, with a half-point tolerance. Partial overlaps are kept. Text is kept if removing it would move later text on the same line.</p>
+        </div>
+      </div>
+
+      <div class="sub-block">
+        <h3>The pipeline</h3>
+        <ol class="steps">
+          <li><h4>Snapshot</h4><p>Copy the input into a private scratch folder while hashing it. A later change to the source fails the job.</p></li>
+          <li><h4>Strict parse</h4><p>Check header and end marker, object graph, page boxes, rotations and stream sizes against limits. Encrypted files stop here.</p></li>
+          <li><h4>Scan</h4><p>Find annotations and artifact sections; render every page once as a baseline.</p></li>
+          <li><h4>Edit</h4><p>Remove annotation references, or splice out only the painting operator of each removed object. Every other byte stays identical.</p></li>
+          <li><h4>Verify</h4><p>Reopen strictly and with PDFium. Compare geometry, then pixels and text outside the removed area. Check counts add up.</p></li>
+          <li><h4>Publish</h4><p>Re-hash the source, then create the output exclusively. A hard link is tried first; on phones a rename is the fallback.</p></li>
+        </ol>
+      </div>
+
+      <div class="cols sub-block">
+        <div class="card outlined">
+          <h3>What “verified” means here</h3>
+          <ul class="plain">
+            <li>Page count, boxes and rotation of every page are unchanged.</li>
+            <li>Every page, rendered at 1,024 px on its long edge, is pixel-identical outside the removed objects’ bounds (plus a 2 px margin).</li>
+            <li>Characters outside the removed area are unchanged.</li>
+            <li>The number removed equals the sum by kind and the pages changed match.</li>
+            <li>The source file’s hash is the same after processing as before.</li>
+          </ul>
+          <p class="muted" style="margin-top:12px">A failed check returns <code>processing_failed</code> with a specific code. Nothing is published. Checks run at 1,024 px and do not prove identical rendering in every viewer.</p>
+        </div>
+        <div class="card outlined">
+          <h3>Outcomes</h3>
+          <div class="table-wrap" style="border:0"><table style="min-width:0">
+            <tbody>
+              <tr><td class="k"><code>watermark_removed_successfully</code></td><td>A cleaned file exists and passed every check.</td></tr>
+              <tr><td class="k"><code>no_supported_watermark_detected</code></td><td>Nothing removable in scope. No file. Not proof the PDF has no watermark.</td></tr>
+              <tr><td class="k"><code>unsupported_watermark_structure</code></td><td>A candidate or document the engine will not edit (for example, signed).</td></tr>
+              <tr><td class="k"><code>password_required</code></td><td>Encrypted; no decryption.</td></tr>
+              <tr><td class="k"><code>invalid_or_unreadable_pdf</code></td><td>Cannot be opened or fails structural checks.</td></tr>
+              <tr><td class="k"><code>processing_failed</code></td><td>Limit hit, source changed, or a verification check failed.</td></tr>
+            </tbody></table></div>
+        </div>
+      </div>
+
+      <div class="sub-block">
+        <h3>Limits: PC worker mode versus on the phone</h3>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Limit</th><th>Worker process (PC default)</th><th>In the app (phone)</th></tr></thead>
+          <tbody>
+            <tr><td class="k">Input size</td><td>64 MiB</td><td>40 MiB</td></tr>
+            <tr><td class="k">Pages</td><td>100</td><td>100</td></tr>
+            <tr><td class="k">Decoded streams</td><td>64 MiB</td><td>48 MiB</td></tr>
+            <tr><td class="k">Memory cap</td><td>768 MiB (Job Object or rlimit)</td><td>None enforced; the app process is shared</td></tr>
+            <tr><td class="k">Time cap</td><td>30 s default, up to 300 s</td><td>None; a native PDFium call cannot be interrupted</td></tr>
+            <tr><td class="k">Measured speed</td><td colspan="2">On a PC: 100 blank pages analysed in about 2 s; a 50-page area removal in about 4 s. Phone speed has not been measured.</td></tr>
+          </tbody></table></div>
+      </div>
+    </section>
+
+    <!-- ============================== STACK ============================== -->
+    <section id="stack">
+      <p class="eyebrow">Technology</p>
+      <h2>What it is built with</h2>
+      <p class="lead">Every row below is a version that was installed and used in this build.</p>
+      <div class="table-wrap sub-block"><table>
+        <thead><tr><th>Area</th><th>Technology</th><th>Version</th><th>Role</th></tr></thead>
+        <tbody>
+          <tr><td class="k">App framework</td><td>Flutter and Dart</td><td>3.50.0, Dart 3.14</td><td>All screens, touch handling for the selection rectangle, file copy.</td></tr>
+          <tr><td class="k">Design system</td><td><code>material_ui</code> (Material 3)</td><td>1.11.0</td><td>Components, theme, icons.</td></tr>
+          <tr><td class="k">Files</td><td><code>file_picker</code></td><td>13.3.3</td><td>System document picker and Save As. No storage permission.</td></tr>
+          <tr><td class="k">Android host</td><td>Kotlin, <code>FlutterActivity</code>, <code>MethodChannel</code></td><td>Kotlin 2.4.20, AGP 9.3.1, Gradle 9.5.0, JDK 17</td><td>Bridge between Dart and Python; thread and folder management.</td></tr>
+          <tr><td class="k">Embedded Python</td><td>Chaquopy</td><td>17.2.0, Python 3.13</td><td>Runs the engine inside the APK. arm64-v8a only.</td></tr>
+          <tr><td class="k">PDF structure</td><td><code>pypdf</code></td><td>7.1.0</td><td>Object graph, annotations, content streams, cloning. Pure Python, BSD-3-Clause.</td></tr>
+          <tr><td class="k">Rendering</td><td><code>pypdfium2</code> → PDFium</td><td>5.15.2</td><td>Page rendering, object bounds, text, independent checks. Ships as an Android wheel with <code>libpdfium.so</code> (6.6 MB).</td></tr>
+          <tr><td class="k">Pixels</td><td>Pillow</td><td>11.0.0 on Android, 12.3.0 on a PC</td><td>Preview PNGs and before/after pixel differences. PyPI has no Android build, so Chaquopy’s own is used.</td></tr>
+          <tr><td class="k">Fonts</td><td>Newsreader, Figtree</td><td>variable, SIL OFL</td><td>Headlines and text. Bundled (441 KB and 61 KB), with licence texts in the app’s licence page.</td></tr>
+          <tr><td class="k">Android target</td><td>compileSdk 36, minSdk 24, NDK 28.2</td><td>Android 7.0+</td><td>minSdk 24 is the floor Chaquopy 17 supports.</td></tr>
+          <tr><td class="k">Tests</td><td><code>flutter_test</code>, Python <code>unittest</code></td><td></td><td>93 Flutter and 109 engine tests (see Testing).</td></tr>
+        </tbody></table></div>
+      <div class="card outlined sub-block"><div class="row"><svg class="ic" aria-hidden="true"><use href="#i-info"/></svg><h4>Not used, on purpose</h4></div>
+        <p class="muted"><strong>PyMuPDF</strong>: its AGPL licence cannot be assumed to fit a distributed app. <strong>An HTTP client and a server</strong>: removed with the move to local processing. <strong>PDFium’s content regeneration</strong>: it lost data in testing (see the decisions).</p></div>
+    </section>
+
+    <!-- ============================== DECISIONS ============================== -->
+    <section id="decisions">
+      <p class="eyebrow">Why these choices</p>
+      <h2>The decisions, and what each one costs</h2>
+      <p class="lead">Each card gives the decision, the reason, what was rejected, and the price paid. Where a choice was forced by a limit of a platform or a library, the limit is named.</p>
+      <div class="grid wide sub-block">
+        <div class="card decision">
+          <span class="tag">Interface</span><h3>Flutter with Material 3</h3>
+          <p class="why">One Dart code base, exact control over drawing and touch for the selection rectangle, and Material 3 components built in. The project began in Flutter and the Figma design maps onto it directly.</p>
+          <p><strong>Rejected:</strong> a native Kotlin interface. It would also work; nothing needed it enough to justify restarting.</p>
+          <p><strong>Cost:</strong> a bridge to Kotlin and Python, and a larger APK.</p>
+        </div>
+        <div class="card decision">
+          <span class="tag">Engine language</span><h3>Keep the engine in Python</h3>
+          <p class="why">It already existed, with a strict design and 66 tests, and PDF repair work needs mature parsing code. pypdf gives full access to the object graph; Dart has no comparable package.</p>
+          <p><strong>Rejected:</strong> porting to Kotlin or Dart. Months of work to re-earn the same trust, with new bugs in the one place bugs are unaffordable.</p>
+          <p><strong>Cost:</strong> an embedded interpreter.</p>
+        </div>
+        <div class="card decision">
+          <span class="tag">Packaging</span><h3>Embed Python with Chaquopy</h3>
+          <p class="why">It puts CPython and pip-installed wheels inside the APK and lets Kotlin call Python directly. pypdf is pure Python, pypdfium2 has an Android wheel, and Pillow has a Chaquopy build.</p>
+          <p><strong>Rejected:</strong> a PC server (the earlier design, removed). Also rejected: other Python-on-Android toolchains, which do not embed into an existing Flutter app as directly.</p>
+          <p><strong>Cost:</strong> arm64 only (Python 3.13 and pypdfium2 have no 32-bit or x86 build here), about 25 MB added.</p>
+        </div>
+        <div class="card decision">
+          <span class="tag">Execution</span><h3>Run the engine inside the app process</h3>
+          <p class="why">Android cannot start a second Python interpreter, so the worker-process mode used on a PC is not available. An in-process mode runs the same code and the same checks.</p>
+          <p><strong>Cost:</strong> no memory cap and no hard time limit. The adapter compensates with lower input limits (40 MiB, 100 pages) shown to the user before a file is accepted. A runaway document could still stop the app.</p>
+        </div>
+        <div class="card decision">
+          <span class="tag">Libraries</span><h3>pypdf for structure, PDFium for pixels</h3>
+          <p class="why">Two independent implementations. pypdf proves the object graph is unchanged; PDFium proves what a viewer would draw is unchanged. Agreement of both is the evidence.</p>
+          <p><strong>Rejected:</strong> PyMuPDF (AGPL), pikepdf/qpdf (viable, but no renderer and a heavier native footprint).</p>
+        </div>
+        <div class="card decision">
+          <span class="tag">Editing</span><h3>Splice bytes; do not regenerate content</h3>
+          <p class="why">PDFium can rewrite a page’s content stream after objects are removed. In testing it dropped shading and inline images, lost character and word spacing, and leaked text render mode into later text. The engine instead removes only each object’s painting operator and leaves every other byte alone.</p>
+          <p><strong>Cost:</strong> its own content-stream reader (the largest module, 702 lines) and some structures it deliberately skips.</p>
+        </div>
+        <div class="card decision">
+          <span class="tag">Safety</span><h3>Verify by rendering; fail closed</h3>
+          <p class="why">A PDF can be structurally valid and visibly wrong. Rendering before and after is the one check that matches what a person sees.</p>
+          <p><strong>Cost:</strong> time (every page is rendered twice) and a small chance of refusing a good edit. Both are accepted: a refusal is cheap, a corrupted document is not.</p>
+        </div>
+        <div class="card decision">
+          <span class="tag">Coordinates</span><h3>The engine renders the preview you draw on</h3>
+          <p class="why">Rectangles are stored as 0 to 1 fractions of the engine’s own page-one image, bound to that exact preview by a hash of the page geometry. There is no guessing between screen pixels, an Android renderer and PDF units, especially on rotated or cropped pages. An earlier version rendered the preview with a separate Android library; that was removed.</p>
+        </div>
+        <div class="card decision">
+          <span class="tag">Data flow</span><h3>Files on disk, JSON on the channel</h3>
+          <p class="why">PDFs can be tens of megabytes. Passing them through a platform channel copies them several times in memory. A per-document folder keeps the channel small and makes cleanup one delete.</p>
+        </div>
+        <div class="card decision">
+          <span class="tag">Concurrency</span><h3>One document at a time</h3>
+          <p class="why">One executor thread serialises engine calls. It protects memory, and the app only ever works on the document on screen.</p>
+        </div>
+        <div class="card decision">
+          <span class="tag">Originals</span><h3>Work on a copy; publish exclusively</h3>
+          <p class="why">The source is never opened for writing, outputs are created with a flag that fails if the file exists, and the source is re-hashed afterwards. The user’s file cannot be lost to a bug here.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================== LOCAL ============================== -->
+    <section id="local">
+      <p class="eyebrow">Why local processing</p>
+      <h2>The file stays where it is</h2>
+      <p class="lead">The first complete version used a server. It passed its tests, and it still failed the one test that mattered: install the app on a phone and use it. Moving the engine into the app removes the edge that failed.</p>
+
+      <figure class="diagram sub-block">
+        <div class="scroll">
+          <svg viewBox="0 0 900 330" style="min-width:720px" role="img" aria-label="Two designs side by side: the earlier design sends the PDF over the local network to a PC server that runs the engine; the current design runs the engine inside the app, with no network edge.">
+            <defs>
+              <marker id="ah4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="mk"/></marker>
+              <marker id="ah4r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" style="fill:var(--error)"/></marker>
+              <marker id="ah4p" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="mk p"/></marker>
+            </defs>
+            <text class="t-title" x="20" y="24">Earlier design (built, tested, removed)</text>
+            <rect class="d-box" x="30" y="60" width="130" height="64" rx="12"/><text class="t-title" x="95" y="88" text-anchor="middle">Phone app</text><text class="t-small t-muted" x="95" y="106" text-anchor="middle">picks, shows, saves</text>
+            <line class="d-line risk" x1="160" y1="92" x2="266" y2="92" marker-end="url(#ah4r)"/>
+            <text class="t-lab t-err" x="213" y="80" text-anchor="middle">PDF over Wi-Fi</text><text class="t-small t-err" x="213" y="112" text-anchor="middle">HTTP</text>
+            <rect class="d-box" x="270" y="60" width="150" height="64" rx="12"/><text class="t-title" x="345" y="88" text-anchor="middle">PC server</text><text class="t-small t-muted" x="345" y="106" text-anchor="middle">FastAPI, job store</text>
+            <line class="d-line" x1="345" y1="124" x2="345" y2="170" marker-end="url(#ah4)"/><text class="t-lab" x="357" y="152">spawns</text>
+            <rect class="d-box" x="270" y="174" width="150" height="64" rx="12"/><text class="t-title" x="345" y="202" text-anchor="middle">Engine worker</text><text class="t-small t-muted" x="345" y="220" text-anchor="middle">own process, capped</text>
+            <text class="t-small t-err" x="20" y="274">Needs: PC running, same network,</text><text class="t-small t-err" x="20" y="290">address set, firewall open, token.</text>
+            <text class="t-small t-err" x="20" y="312">Failure seen by the user: “Server not reachable”.</text>
+            <line class="d-line life" x1="450" y1="20" x2="450" y2="316"/>
+            <text class="t-title" x="480" y="24">Current design (shipped in the APK)</text>
+            <rect class="d-box hl" x="490" y="60" width="130" height="64" rx="12"/><text class="t-title" x="555" y="88" text-anchor="middle">Phone app</text><text class="t-small t-muted" x="555" y="106" text-anchor="middle">picks, shows, saves</text>
+            <line class="d-line primary" x1="555" y1="124" x2="555" y2="170" marker-end="url(#ah4p)"/><text class="t-lab t-primary" x="567" y="152">method channel, JSON</text>
+            <rect class="d-box hl" x="470" y="174" width="170" height="64" rx="12"/><text class="t-title" x="555" y="202" text-anchor="middle">Engine, in-process</text><text class="t-small t-muted" x="555" y="220" text-anchor="middle">Python + PDFium inside the APK</text>
+            <rect class="d-box dash" x="700" y="74" width="180" height="36" rx="10"/><text class="t-small t-muted" x="790" y="96" text-anchor="middle">network: none, by design</text>
+            <text class="t-small" x="480" y="274">Needs: nothing but the phone.</text>
+            <text class="t-small" x="480" y="290">Failure modes left: the engine cannot start,</text>
+            <text class="t-small" x="480" y="306">or a document is refused. Both are reported.</text>
+          </svg>
+        </div>
+        <figcaption>What changed between the two designs: one edge, the network hop, disappears. Everything that depended on it (a running PC, an address, a token, cleanup of uploaded files, HTTPS if exposed) goes with it.</figcaption>
+      </figure>
+
+      <div class="grid wide sub-block">
+        <div class="card tertiary">
+          <div class="row"><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg><h3>What local processing gives</h3></div>
+          <ul class="plain">
+            <li><strong>Privacy.</strong> Contracts, scans and invoices never leave the phone. The release manifest has no internet permission, so this is enforced by Android rather than promised.</li>
+            <li><strong>It works anywhere.</strong> No Wi-Fi, no PC, no setup screen, no address to type.</li>
+            <li><strong>Nothing to run or secure.</strong> No hosting, accounts, tokens, rate limits or expiry jobs. A public upload service would need all of them, and sandboxing for a native PDF parser.</li>
+            <li><strong>No upload wait.</strong> A 40 MB file never crosses a network.</li>
+          </ul>
+        </div>
+        <div class="card warn">
+          <div class="row"><svg class="ic" aria-hidden="true"><use href="#i-warn"/></svg><h3>What it costs</h3></div>
+          <ul class="plain">
+            <li><strong>A bigger app.</strong> 41.6 MB, because Python, PDFium and Pillow ship inside it.</li>
+            <li><strong>Phone-sized limits.</strong> 40 MiB and 100 pages, and speed that depends on the phone.</li>
+            <li><strong>Less isolation.</strong> No separate process, memory cap or hard timeout (see Limits).</li>
+            <li><strong>arm64 phones only.</strong> That covers nearly all phones sold in the last several years, but not every device.</li>
+            <li><strong>Updates need a new app version.</strong> The engine cannot be patched on a server.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================== MATERIAL ============================== -->
+    <section id="material">
+      <p class="eyebrow">Material Design 3</p>
+      <h2>One design system, from the theme down to the dialogs</h2>
+      <p class="lead">The Figma design was dark with a rose accent. It is expressed as a Material 3 color scheme, type scale and component themes in a single file, so screens ask for “primary” or “title large” and never hard-code a value. This document uses the same system with its own light and dark schemes.</p>
+
+      <div class="sub-block">
+        <h3>Color roles</h3>
+        <div class="swatches">
+          <div class="sw" style="background:#F4B9BD;color:#17171D"><b>primary</b><span>#F4B9BD</span></div>
+          <div class="sw" style="background:#17171D;color:#F4B9BD;border-color:#41424D"><b>onPrimary</b><span>#17171D</span></div>
+          <div class="sw" style="background:#151515;color:#fff;border-color:#41424D"><b>surface</b><span>#151515</span></div>
+          <div class="sw" style="background:#252631;color:#fff;border-color:#41424D"><b>surfaceContainer</b><span>#252631 (cards)</span></div>
+          <div class="sw" style="background:#41424D;color:#fff"><b>outline · secondaryContainer</b><span>#41424D</span></div>
+          <div class="sw" style="background:#1B403B;color:#fff"><b>primaryContainer</b><span>#1B403B (success)</span></div>
+          <div class="sw" style="background:#3A282B;color:#F4B9BD;border-color:#41424D"><b>errorContainer</b><span>#3A282B</span></div>
+          <div class="sw" style="background:#151515;color:#B5B5BC;border-color:#41424D"><b>onSurfaceVariant</b><span>#B5B5BC (body text)</span></div>
+        </div>
+        <p class="muted" style="margin-top:12px">Seeded from the pink accent with <code>ColorScheme.fromSeed</code>, then pinned to the Figma values where they differ. Green for “success” is the only color outside the standard roles.</p>
+      </div>
+
+      <div class="sub-block">
+        <h3>Type scale</h3>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Role</th><th>Face</th><th class="num">Size / line</th><th>Used for</th></tr></thead>
+          <tbody>
+            <tr><td class="k">headlineMedium</td><td>Newsreader 600</td><td class="num">28 / 34</td><td>Screen titles</td></tr>
+            <tr><td class="k">headlineSmall</td><td>Newsreader 600</td><td class="num">26 / 32</td><td>Home headline</td></tr>
+            <tr><td class="k">titleLarge</td><td>Newsreader 600</td><td class="num">20 / 26</td><td>Card and section titles, dialogs</td></tr>
+            <tr><td class="k">titleMedium / titleSmall</td><td>Figtree 600</td><td class="num">16 / 24 · 14 / 20</td><td>Header bar, list items</td></tr>
+            <tr><td class="k">bodyLarge / bodyMedium / bodySmall</td><td>Figtree 400</td><td class="num">16 · 14 · 12</td><td>Reading text, captions</td></tr>
+            <tr><td class="k">labelLarge / labelMedium</td><td>Figtree 600</td><td class="num">16 / 20 · 13 / 18</td><td>Buttons, chips, segmented buttons</td></tr>
+          </tbody></table></div>
+        <p class="muted" style="margin-top:12px">Newsreader’s optical-size axis is set per role (24 to 36), so large headlines get the display master. A serif for headlines suits a document tool; Figtree is a clean, friendly sans that stays legible at 12 px.</p>
+      </div>
+
+      <div class="sub-block">
+        <h3>Components and shape</h3>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Component</th><th>Where it appears</th><th>Shape</th></tr></thead>
+          <tbody>
+            <tr><td class="k">FilledButton</td><td>Primary action on every screen (56 px high, pinned above the system bar)</td><td>12 px radius</td></tr>
+            <tr><td class="k">OutlinedButton, TextButton</td><td>Back to Home on Error; Clear selection, Try again</td><td>12 px</td></tr>
+            <tr><td class="k">Card</td><td>Upload card, preview, result and error cards</td><td>20 px, 1 px outline</td></tr>
+            <tr><td class="k">Chip, ActionChip</td><td>File size and page count; “What can be removed?”; format limit; result summary</td><td>10 px</td></tr>
+            <tr><td class="k">SegmentedButton</td><td><em>Mark area / Automatic</em>; <em>All pages / Page 1 only</em></td><td>stadium</td></tr>
+            <tr><td class="k">LinearProgressIndicator</td><td>Copy progress, then indeterminate while the engine works</td><td>5 px radius</td></tr>
+            <tr><td class="k">Modal bottom sheet</td><td>What can be removed (with drag handle)</td><td>28 px top</td></tr>
+            <tr><td class="k">AlertDialog</td><td>Confirm leaving mid-removal; engine check</td><td>24 px</td></tr>
+            <tr><td class="k">PopupMenuButton, SnackBar, Tooltip</td><td>Header “…” menu; save confirmations; hints on disabled actions</td><td>12 px</td></tr>
+          </tbody></table></div>
+      </div>
+
+      <div class="cols sub-block">
+        <div class="card outlined">
+          <h3>Why Material 3</h3>
+          <ul class="plain">
+            <li><strong>States and behaviour come built in:</strong> ripple, focus, disabled, selected, dismissal, back handling.</li>
+            <li><strong>One place to change the look.</strong> Roles in <code>app_theme.dart</code> drive every screen, so a new accent is a one-line edit.</li>
+            <li><strong>First-class in Flutter</strong>, and familiar to every Android user.</li>
+            <li><strong>It extends the Figma design without breaking it.</strong> Chips, segmented buttons and sheets sit inside the same palette and shapes.</li>
+          </ul>
+        </div>
+        <div class="card outlined">
+          <h3>Accessibility</h3>
+          <ul class="plain">
+            <li>Primary actions are 56 px high; other buttons at least 48 px.</li>
+            <li>Screen titles are marked as headers; the progress bar and the page preview have spoken labels.</li>
+            <li>Content scrolls under large text sizes instead of clipping.</li>
+            <li>Disabled actions explain themselves in a tooltip (“Select the watermark area on the page first”).</li>
+          </ul>
+          <p class="muted" style="margin-top:12px">Color contrast of the Figma palette has not been measured against a standard.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================== QUALITY ============================== -->
+    <section id="quality">
+      <p class="eyebrow">Testing and status</p>
+      <h2>What has been checked, and what has not</h2>
+      <p class="lead">Automated tests cover the screens and the engine thoroughly. The one thing they cannot cover is the packaging: that Python and PDFium start inside the APK on a real phone.</p>
+      <div class="sub-block"><div class="table-wrap"><table>
+        <thead><tr><th>Check</th><th>Result</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td class="k">Flutter analysis</td><td>No issues</td><td><span class="pill ok">Verified</span></td></tr>
+          <tr><td class="k">Flutter tests</td><td>93 pass: every screen driven with a fake engine, the channel client against a fake channel, selection geometry and controller, picker validation.</td><td><span class="pill ok">Verified</span></td></tr>
+          <tr><td class="k">Engine tests (on a PC)</td><td>109 pass, including 15 for the in-process mode and the Android adapter, the area and artifact removal cases, rotations and crop boxes, signed and encrypted refusals, and a forced verification failure that must publish nothing.</td><td><span class="pill ok">Verified</span></td></tr>
+          <tr><td class="k">Screens against Figma</td><td>Each frame rendered at 390 × 844 and compared by eye with the prototype. The Figma file itself could not be read, so spacing comes from prototype screenshots.</td><td><span class="pill info">Checked by eye</span></td></tr>
+          <tr><td class="k">APK contents</td><td>Inspected: libpython 3.13, the engine, pypdf, pypdfium2 with <code>libpdfium.so</code>, Pillow with native libraries; no internet permission; 64-bit ARM only.</td><td><span class="pill ok">Verified</span></td></tr>
+          <tr><td class="k">Engine starts on a phone</td><td>Not run. The in-app <em>Check PDF engine</em> action exists to answer this in seconds.</td><td><span class="pill warn">Not verified</span></td></tr>
+          <tr><td class="k">Real-world watermarked PDFs</td><td>Tested with generated PDFs. During development the engine was also run on PDFs bundled with a local Acrobat install: all 637 pages in 73 files mapped exactly, and the 18 watermark artifacts in one Adobe sample were removed and validated. A broader set has not been tried.</td><td><span class="pill warn">Partly verified</span></td></tr>
+          <tr><td class="k">Phone speed and memory</td><td>Unknown.</td><td><span class="pill warn">Not verified</span></td></tr>
+        </tbody></table></div></div>
+    </section>
+
+    <!-- ============================== LIMITS ============================== -->
+    <section id="limits">
+      <p class="eyebrow">Limits and next steps</p>
+      <h2>Known risks, in the order they matter</h2>
+      <div class="grid wide sub-block">
+        <div class="card warn"><h4>1. Not yet run on a device</h4><p>Likeliest failures are PDFium or Pillow not loading in the packaged app. First step: install the APK and run <em>Check PDF engine</em>. An emulator test needs an x86_64 PDFium build that does not exist on PyPI and would have to be built.</p></div>
+        <div class="card outlined"><h4>2. In-process risk</h4><p>A very large or hostile PDF could exhaust memory or run long inside the app. Limits are enforced before processing, not during. If this proves real, move the engine into a separate Android service process with its own memory ceiling.</p></div>
+        <div class="card outlined"><h4>3. Scope of removal</h4><p>Watermarks inside scanned images, nested forms or encrypted files are out of reach. The app says so instead of guessing. Real-world coverage is the main measure of usefulness still to be taken.</p></div>
+        <div class="card outlined"><h4>4. Distribution</h4><p>The APK is signed with the debug key and uses the placeholder ID <code>com.example.pdf_watermark_remover</code>. A real release key and ID are needed before any store listing.</p></div>
+        <div class="card outlined"><h4>5. Library versions</h4><p>Pillow differs between the phone (11.0.0) and the PC tests (12.3.0). The engine uses only functions common to both, but a phone-side run of the full engine suite would close the gap. PDFium and pypdf need security updates tracked.</p></div>
+        <div class="card outlined"><h4>6. Platforms</h4><p>Android only, arm64 only. The iOS, desktop and web folders were removed; they can be regenerated with <code>flutter create</code> if needed, but the engine packaging is Android-specific.</p></div>
+      </div>
+    </section>
+
+    <!-- ============================== REPO ============================== -->
+    <section id="repo">
+      <p class="eyebrow">Repository map</p>
+      <h2>Where things are</h2>
+      <pre class="sub-block">lib/                              Flutter app (Dart)
+  main.dart                       entry point, wires services
+  theme/app_theme.dart            Material 3 theme: colors, type scale, component themes
+  screens/                        home, upload, processing, result, error
+  services/                       engine interface + on-device engine, picker, saver
+  widgets/                        shared frame, header, cards, sheets, selection view
+  models/, utils/                 job and area models, selection geometry
+android/app/
+  src/main/kotlin/…/MainActivity.kt   Chaquopy host and channel handler
+  src/main/python/pdfwm_mobile.py     JSON entry points for the engine
+  build.gradle.kts                    Chaquopy, Python packages, ABI filter
+processing_engine/
+  pdf_watermark_engine/           the engine (15 files)
+  tests/                          109 tests, including adapter and in-process
+  README.md, DEPENDENCIES.md, VERIFICATION.md
+assets/fonts/                     Figtree, Newsreader and their licences
+test/                             Flutter tests, fakes, design capture test
+docs/                             application guide
+dist/                             built APK (not committed)</pre>
+    </section>
+
+    <footer>
+      <p>PDF Watermark Remover application guide · prepared 18 November 2026 for version 1.1.0. Statements about test results describe the runs made on that date. Statements marked “not verified” are exactly that.</p>
+    </footer>
+  </main>
+</div>
+
+<script>
+(function () {
+  var root = document.documentElement;
+  var button = document.getElementById("theme-toggle");
+  try {
+    var saved = localStorage.getItem("guide-theme");
+    if (saved === "light" || saved === "dark") root.setAttribute("data-theme", saved);
+  } catch (e) {}
+  button.addEventListener("click", function () {
+    var current = root.getAttribute("data-theme");
+    if (!current) current = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    var next = current === "dark" ? "light" : "dark";
+    root.setAttribute("data-theme", next);
+    try { localStorage.setItem("guide-theme", next); } catch (e) {}
+  });
+
+  var links = Array.prototype.slice.call(document.querySelectorAll(".drawer a, .chip-nav a"));
+  var sections = Array.prototype.slice.call(document.querySelectorAll("main section"));
+  function mark(id) {
+    links.forEach(function (a) {
+      if (a.getAttribute("href") === "#" + id) a.setAttribute("aria-current", "true");
+      else a.removeAttribute("aria-current");
+    });
+  }
+  if ("IntersectionObserver" in window) {
+    var observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) { if (entry.isIntersecting) mark(entry.target.id); });
+    }, { rootMargin: "-20% 0px -70% 0px" });
+    sections.forEach(function (s) { observer.observe(s); });
+  }
+  mark("overview");
+})();
+</script>

@@ -3,7 +3,6 @@ import 'package:material_ui/material_ui.dart';
 
 import '../models/pdf_page_preview.dart';
 import '../services/pdf_area_selection_controller.dart';
-import '../theme/app_theme.dart';
 import '../utils/pdf_selection_geometry.dart';
 
 class PdfPageSelectionView extends StatefulWidget {
@@ -175,7 +174,10 @@ class _PdfPageSelectionViewState extends State<PdfPageSelectionView> {
                   child: ClipRect(
                     child: CustomPaint(
                       key: const ValueKey('pdf-region-outline'),
-                      painter: PdfRegionPainter(region: region),
+                      painter: PdfRegionPainter(
+                        region: region,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
                     ),
                   ),
                 ),
@@ -186,7 +188,7 @@ class _PdfPageSelectionViewState extends State<PdfPageSelectionView> {
               child: widget.controller.canDraw
                   ? Semantics(
                       label: 'Select watermark area on page one',
-                      hint: 'Drag to select. Drag again to replace. Coordinates follow the displayed page.',
+                      hint: 'Drag to select. Drag again to replace.',
                       child: RawGestureDetector(
                         gestures: {
                           EagerGestureRecognizer:
@@ -214,7 +216,8 @@ class _PdfPageSelectionViewState extends State<PdfPageSelectionView> {
 }
 
 class PdfRegionPainter extends CustomPainter {
-  const PdfRegionPainter({required this.region});
+  const PdfRegionPainter({required this.region, required this.color});
+  final Color color;
   final Rect region;
 
   @override
@@ -227,14 +230,14 @@ class PdfRegionPainter extends CustomPainter {
     );
     canvas.drawRect(
       rect,
-      Paint()..color = AppColors.accent.withValues(alpha: 0.16),
+      Paint()..color = color.withValues(alpha: 0.24),
     );
     // Inset the stroke so even edge-to-edge regions stay inside the PDF page.
     if (rect.width >= 2 && rect.height >= 2) {
       canvas.drawRect(
         rect.deflate(1),
         Paint()
-          ..color = AppColors.accent
+          ..color = color
           ..style = PaintingStyle.stroke
           ..strokeWidth = 2,
       );
@@ -243,5 +246,5 @@ class PdfRegionPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(PdfRegionPainter oldDelegate) =>
-      oldDelegate.region != region;
+      oldDelegate.region != region || oldDelegate.color != color;
 }
